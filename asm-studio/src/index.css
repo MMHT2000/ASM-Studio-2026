@@ -1,0 +1,41 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: #1e1e2e;
+  color: #cdd6f4;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1e1e2e;
+}
+::-webkit-scrollbar-thumb {
+  background: #45475a;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #585b70;
+}
+
+/* Monaco editor container fix */
+.monaco-editor .overflow-guard {
+  border-radius: 0 !important;
+}
+

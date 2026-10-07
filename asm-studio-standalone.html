@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ASM Studio (Standalone 2026 8086 IDE)</title>
+  <!-- Tailwind via CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- JetBrains Mono Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            editor: {
+              bg: '#1e1e2e',
+              panel: '#181825',
+              border: '#313244',
+              accent: '#89b4fa',
+              amber: '#f9e2af',
+              green: '#a6e3a1',
+              red: '#f38ba8',
+              mauve: '#cba6f7',
+              text: '#cdd6f4',
+              subtext: '#a6adc8',
+              surface: '#313244',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'JetBrains Mono', monospace; }
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #181825; }
+    ::-webkit-scrollbar-thumb { background: #45475a; border-radius: 3px; }
+    .changed-reg { animation: pulse 0.5s ease; }
+    @keyframes pulse { 0% { background-color: rgba(249, 226, 175, 0.4); } 100% { background-color: transparent; } }
+  </style>
+</head>
+<body class="bg-editor-bg text-editor-text h-screen flex flex-col overflow-hidden select-none">
+
+  <!-- Top Navigation & Debug Toolbar -->
+  <header class="bg-editor-panel border-b border-editor-border px-3 py-2 flex items-center justify-between text-xs">
+    <div class="flex items-center gap-3">
+      <div class="flex items-center gap-1.5 font-bold text-sm text-editor-accent">
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M9 9h6v6H9z"/><path d="M15 3v6M9 3v6M9 15v6M15 15v6M3 9h6M3 15h6M15 9h6M15 15h6"/></svg>
+        ASM Studio <span class="text-[10px] bg-editor-surface px-1.5 py-0.5 rounded text-editor-subtext">2026 Edition</span>
+      </div>
+
+      <div class="flex items-center gap-1">
+        <input type="file" id="file-open-input" accept=".asm,.s,.txt" class="hidden">
+        <button id="btn-open" class="bg-editor-surface/60 hover:bg-editor-surface text-editor-subtext hover:text-editor-text px-2 py-1 rounded font-medium transition" title="Open .asm file (Ctrl+O)">
+          📂 Open
+        </button>
+        <button id="btn-save" class="bg-editor-surface/60 hover:bg-editor-surface text-editor-subtext hover:text-editor-text px-2 py-1 rounded font-medium transition" title="Save .asm file (Ctrl+S)">
+          💾 Save
+        </button>
+        <button id="btn-share" class="bg-editor-surface/60 hover:bg-editor-surface text-editor-blue hover:bg-editor-blue/20 px-2 py-1 rounded font-medium transition" title="Copy shareable link">
+          🔗 Share
+        </button>
+
+        <div class="h-4 w-px bg-editor-border mx-1"></div>
+
+        <button id="btn-assemble" class="bg-editor-accent/20 hover:bg-editor-accent/30 text-editor-accent border border-editor-accent/40 px-2.5 py-1 rounded font-medium transition flex items-center gap-1">
+          ⚙ Assemble (F5)
+        </button>
+        <button id="btn-animate" class="bg-editor-surface hover:bg-editor-green/20 hover:text-editor-green px-2.5 py-1 rounded font-medium transition flex items-center gap-1">
+          ▶ Animate
+        </button>
+        <select id="anim-speed" class="bg-editor-panel border border-editor-border text-[11px] rounded px-1.5 py-0.5 text-editor-text outline-none cursor-pointer" title="Stepping speed">
+          <option value="1000">1 Hz</option>
+          <option value="200">5 Hz</option>
+          <option value="100" selected>10 Hz</option>
+          <option value="30">30 Hz</option>
+        </select>
+        <button id="btn-run" class="bg-editor-surface hover:bg-editor-cyan/20 hover:text-editor-cyan px-2.5 py-1 rounded font-medium transition flex items-center gap-1" title="Fast Run to Halt">
+          ⚡ Fast
+        </button>
+        <button id="btn-step-back" class="bg-editor-surface hover:bg-editor-peach/20 hover:text-editor-peach px-2.5 py-1 rounded font-medium transition flex items-center gap-1 disabled:opacity-40" disabled title="Step Back (Undo instruction)">
+          ⏮ Back
+        </button>
+        <button id="btn-step" class="bg-editor-surface hover:bg-editor-amber/20 hover:text-editor-amber px-2.5 py-1 rounded font-medium transition flex items-center gap-1">
+          ⏭ Step
+        </button>
+        <button id="btn-reset" class="bg-editor-surface hover:bg-editor-mauve/20 hover:text-editor-mauve px-2.5 py-1 rounded font-medium transition flex items-center gap-1">
+          ↺ Reset
+        </button>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-4">
+      <div id="status-pill" class="text-editor-subtext flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-editor-subtext"></span>
+        <span id="status-text">Ready</span>
+      </div>
+      <div class="text-editor-subtext text-[11px]" id="step-counter">Steps: 0</div>
+    </div>
+  </header>
+
+  <!-- Workspace: Editor / Console / Right Panel -->
+  <main class="flex flex-1 overflow-hidden">
+
+    <!-- Left Area: Editor & Bottom Panel -->
+    <section class="flex-1 flex flex-col border-r border-editor-border overflow-hidden">
+      <!-- Code Editor Area -->
+      <div class="flex-1 flex flex-col relative overflow-hidden bg-editor-bg">
+        <div class="bg-editor-panel/50 px-3 py-1 border-b border-editor-border text-[11px] text-editor-subtext flex justify-between items-center">
+          <span>main.asm</span>
+          <span>MASM / 8086 Syntax</span>
+        </div>
+        <div class="flex-1 flex overflow-hidden">
+          <!-- Line Numbers -->
+          <div id="line-numbers" class="bg-editor-panel/20 text-editor-subtext/40 px-2.5 py-2 text-right select-none text-xs border-r border-editor-border/50">
+            1
+          </div>
+          <!-- Textarea Source -->
+          <textarea id="code-editor" spellcheck="false" class="flex-1 bg-transparent p-2 text-xs leading-5 resize-none outline-none font-mono text-editor-text"></textarea>
+        </div>
+      </div>
+
+      <!-- Bottom Panel: Console & Problems -->
+      <div class="h-44 border-t border-editor-border flex flex-col bg-editor-panel">
+        <div class="flex items-center justify-between border-b border-editor-border px-2 text-xs">
+          <div class="flex">
+            <button id="tab-console" class="px-3 py-1.5 border-b-2 border-editor-accent text-editor-accent font-semibold">Console Output</button>
+            <button id="tab-errors" class="px-3 py-1.5 border-b-2 border-transparent text-editor-subtext hover:text-editor-text">Problems (<span id="err-count">0</span>)</button>
+          </div>
+          <button id="btn-clear-console" class="text-editor-subtext hover:text-editor-text px-2 py-0.5 text-[11px]">Clear</button>
+        </div>
+        <div class="flex-1 p-2 overflow-auto text-xs font-mono" id="panel-content">
+          <div id="console-output" class="text-editor-green whitespace-pre-wrap"></div>
+          <div id="errors-output" class="hidden space-y-1"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Area: CPU Registers & Memory -->
+    <aside class="w-80 flex flex-col bg-editor-panel overflow-hidden">
+      <div class="flex border-b border-editor-border text-xs">
+        <button id="tab-regs" class="flex-1 py-1.5 border-b-2 border-editor-accent text-editor-accent font-semibold text-center">Registers & Flags</button>
+        <button id="tab-mem" class="flex-1 py-1.5 border-b-2 border-transparent text-editor-subtext hover:text-editor-text text-center">Memory Dump</button>
+      </div>
+
+      <!-- Register & Flags Panel -->
+      <div id="panel-regs" class="flex-1 flex flex-col overflow-y-auto p-3 space-y-3 text-xs">
+        <div>
+          <div class="text-[10px] uppercase text-editor-subtext font-bold tracking-wider mb-1.5">General Purpose Registers</div>
+          <div class="grid grid-cols-2 gap-1.5" id="gen-regs"></div>
+        </div>
+
+        <div>
+          <div class="text-[10px] uppercase text-editor-subtext font-bold tracking-wider mb-1.5">Pointers & Index</div>
+          <div class="grid grid-cols-2 gap-1.5" id="ptr-regs"></div>
+        </div>
+
+        <div>
+          <div class="text-[10px] uppercase text-editor-subtext font-bold tracking-wider mb-1.5">Segment Registers</div>
+          <div class="grid grid-cols-2 gap-1.5" id="seg-regs"></div>
+        </div>
+
+        <div>
+          <div class="text-[10px] uppercase text-editor-subtext font-bold tracking-wider mb-1.5">Flags</div>
+          <div class="grid grid-cols-4 gap-1 text-center" id="flags-grid"></div>
+        </div>
+      </div>
+
+      <!-- Memory View Panel -->
+      <div id="panel-mem" class="hidden flex-1 flex flex-col overflow-hidden p-2 text-xs">
+        <div class="flex items-center gap-1 mb-2">
+          <span class="text-editor-subtext text-[11px]">Addr:</span>
+          <input id="mem-addr-input" type="text" value="0300" maxlength="4" class="w-16 bg-editor-surface px-1.5 py-0.5 rounded text-xs outline-none uppercase font-mono text-editor-accent">
+          <button id="mem-jump-btn" class="bg-editor-surface hover:bg-editor-border px-2 py-0.5 rounded text-[11px]">Go</button>
+        </div>
+        <div class="flex-1 overflow-auto font-mono text-[11px]" id="memory-grid"></div>
+      </div>
+    </aside>
+
+  </main>
+
+  <!-- Embedded 8086 Core Script -->
+  <script>
+    const SAMPLE_CODE = `; ========================================================
+; ASM Studio (2026) - Intel 8086 Assembly Sample
+; Computes 42 + 58 = 100, prints greeting & characters
+; ========================================================
+
+.model small
+.stack 100h
+
+.data
+    msg    DB 'Hello, 8086 in 2026!$'
+    num1   DW 42
+    num2   DW 58
+    result DW 0
+
+.code
+main proc
+    ; Initialize data segment
+    MOV AX, @data
+    MOV DS, AX
+
+    ; Print greeting using DOS service (INT 21h, AH=09h)
+    MOV AH, 09h
+    LEA DX, msg
+    INT 21h
+
+    ; Arithmetic demo
+    MOV AX, [num1]     ; Load 42
+    ADD AX, [num2]     ; Add 58 -> AX = 100 (64h)
+    MOV [result], AX   ; Store into memory
+
+    ; Loop demo (Print dots)
+    MOV CX, 5
+print_loop:
+    MOV AH, 02h
+    MOV DL, '.'
+    INT 21h
+    LOOP print_loop
+
+    ; Exit to DOS
+    MOV AH, 4Ch
+    MOV AL, 0
+    INT 21h
+main endp
+END main`;
+
+    // CPU State
+    const cpu = {
+      regs: { AX: 0, BX: 0, CX: 0, DX: 0, SI: 0, DI: 0, SP: 0xFFFE, BP: 0, IP: 0x0100, CS: 0, DS: 0, SS: 0, ES: 0 },
+      flags: { CF: false, ZF: false, SF: false, OF: false, PF: false, AF: false, DF: false, IF: true },
+      mem: new Uint8Array(65536),
+      ipIdx: 0,
+      halted: false,
+      stepCount: 0,
+      output: [],
+      changedRegs: new Set()
+    };
+
+    let program = null;
+
+    // Helper functions
+    const toHex4 = (n) => (n & 0xFFFF).toString(16).toUpperCase().padStart(4, '0');
+    const toHex2 = (n) => (n & 0xFF).toString(16).toUpperCase().padStart(2, '0');
+
+    // Simple Assembler
+    function assembleCode(src) {
+      const lines = src.split('\\n');
+      const instructions = [];
+      const labels = new Map();
+      const vars = new Map();
+      const errors = [];
+      let memOffset = 0x0300;
+      let section = 'code';
+
+      // Pass 1: Parse data & labels
+      for (let i = 0; i < lines.length; i++) {
+        let line = lines[i].split(';')[0].trim();
+        if (!line) continue;
+        const upper = line.toUpperCase();
+
+        if (upper.startsWith('.DATA')) { section = 'data'; continue; }
+        if (upper.startsWith('.CODE')) { section = 'code'; continue; }
+        if (upper.startsWith('.MODEL') || upper.startsWith('.STACK') || upper.startsWith('ASSUME') || upper.startsWith('END')) continue;
+
+        if (section === 'data') {
+          const match = line.match(/^([A-Za-z_][A-Za-z0-9_]*)\s+(DB|DW)\s+(.*)/i);
+          if (match) {
+            const name = match[1].toUpperCase();
+            const type = match[2].toUpperCase();
+            const valStr = match[3].trim();
+            const addr = memOffset;
+
+            if (valStr.startsWith("'") && valStr.endsWith("'")) {
+              const str = valStr.slice(1, -1);
+              for (let c = 0; c < str.length; c++) {
+                cpu.mem[memOffset++] = str.charCodeAt(c);
+              }
+            } else {
+              const num = parseInt(valStr) || 0;
+              cpu.mem[memOffset++] = num & 0xFF;
+              if (type === 'DW') cpu.mem[memOffset++] = (num >> 8) & 0xFF;
+            }
+            vars.set(name, { addr, type });
+          }
+        } else if (section === 'code') {
+          if (upper.includes('PROC') || upper.includes('ENDP')) continue;
+          if (line.includes(':')) {
+            const parts = line.split(':');
+            labels.set(parts[0].trim().toUpperCase(), instructions.length);
+            line = parts[1].trim();
+          }
+          if (line) {
+            const tokens = line.split(/[\s,]+/);
+            instructions.push({
+              mnemonic: tokens[0].toUpperCase(),
+              ops: tokens.slice(1).map(t => t.trim().toUpperCase()).filter(Boolean),
+              line: i + 1
+            });
+          }
+        }
+      }
+
+      return { instructions, labels, vars, errors };
+    }
+
+    // Register Get & Set
+    function getRegVal(name) {
+      name = name.toUpperCase();
+      switch (name) {
+        case 'AX': return cpu.regs.AX; case 'BX': return cpu.regs.BX;
+        case 'CX': return cpu.regs.CX; case 'DX': return cpu.regs.DX;
+        case 'AH': return (cpu.regs.AX >> 8) & 0xFF; case 'AL': return cpu.regs.AX & 0xFF;
+        case 'BH': return (cpu.regs.BX >> 8) & 0xFF; case 'BL': return cpu.regs.BX & 0xFF;
+        case 'CH': return (cpu.regs.CX >> 8) & 0xFF; case 'CL': return cpu.regs.CX & 0xFF;
+        case 'DH': return (cpu.regs.DX >> 8) & 0xFF; case 'DL': return cpu.regs.DX & 0xFF;
+        case 'SI': return cpu.regs.SI; case 'DI': return cpu.regs.DI;
+        case 'SP': return cpu.regs.SP; case 'BP': return cpu.regs.BP;
+        case 'IP': return cpu.regs.IP; case 'CS': return cpu.regs.CS;
+        case 'DS': return cpu.regs.DS; case 'SS': return cpu.regs.SS;
+        case 'ES': return cpu.regs.ES;
+        default: return 0;
+      }
+    }
+
+    function setRegVal(name, val) {
+      name = name.toUpperCase();
+      cpu.changedRegs.add(name);
+      val = val & 0xFFFF;
+      switch (name) {
+        case 'AX': cpu.regs.AX = val; break;
+        case 'BX': cpu.regs.BX = val; break;
+        case 'CX': cpu.regs.CX = val; break;
+        case 'DX': cpu.regs.DX = val; break;
+        case 'AH': cpu.regs.AX = (cpu.regs.AX & 0x00FF) | ((val & 0xFF) << 8); break;
+        case 'AL': cpu.regs.AX = (cpu.regs.AX & 0xFF00) | (val & 0xFF); break;
+        case 'SI': cpu.regs.SI = val; break;
+        case 'DI': cpu.regs.DI = val; break;
+        case 'SP': cpu.regs.SP = val; break;
+        case 'BP': cpu.regs.BP = val; break;
+      }
+    }
+
+    // Step Execution
+    function stepExecution() {
+      if (!program || cpu.halted || cpu.ipIdx >= program.instructions.length) {
+        cpu.halted = true;
+        updateUI();
+        return;
+      }
+
+      cpu.changedRegs.clear();
+      const instr = program.instructions[cpu.ipIdx];
+      let nextIp = cpu.ipIdx + 1;
+
+      try {
+        const m = instr.mnemonic;
+        const ops = instr.ops;
+
+        if (m === 'MOV') {
+          let val = 0;
+          if (ops[1].startsWith('[') && ops[1].endsWith(']')) {
+            const vName = ops[1].slice(1, -1);
+            const v = program.vars.get(vName);
+            if (v) val = cpu.mem[v.addr] | (cpu.mem[v.addr + 1] << 8);
+          } else if (program.vars.has(ops[1])) {
+            val = program.vars.get(ops[1]).addr;
+          } else if (ops[1] === '@DATA') {
+            val = 0;
+          } else if (ops[1].endsWith('H')) {
+            val = parseInt(ops[1].slice(0, -1), 16);
+          } else if (!isNaN(parseInt(ops[1]))) {
+            val = parseInt(ops[1]);
+          } else {
+            val = getRegVal(ops[1]);
+          }
+
+          if (ops[0].startsWith('[') && ops[0].endsWith(']')) {
+            const vName = ops[0].slice(1, -1);
+            const v = program.vars.get(vName);
+            if (v) {
+              cpu.mem[v.addr] = val & 0xFF;
+              cpu.mem[v.addr + 1] = (val >> 8) & 0xFF;
+            }
+          } else {
+            setRegVal(ops[0], val);
+          }
+        } else if (m === 'ADD') {
+          let val = 0;
+          if (ops[1].startsWith('[') && ops[1].endsWith(']')) {
+            const v = program.vars.get(ops[1].slice(1, -1));
+            if (v) val = cpu.mem[v.addr] | (cpu.mem[v.addr + 1] << 8);
+          } else {
+            val = getRegVal(ops[1]);
+          }
+          const cur = getRegVal(ops[0]);
+          const res = (cur + val) & 0xFFFF;
+          setRegVal(ops[0], res);
+          cpu.flags.ZF = (res === 0);
+          cpu.flags.CF = (cur + val > 0xFFFF);
+        } else if (m === 'LEA') {
+          const v = program.vars.get(ops[1]);
+          if (v) setRegVal(ops[0], v.addr);
+        } else if (m === 'LOOP') {
+          cpu.regs.CX = (cpu.regs.CX - 1) & 0xFFFF;
+          cpu.changedRegs.add('CX');
+          if (cpu.regs.CX !== 0 && program.labels.has(ops[0])) {
+            nextIp = program.labels.get(ops[0]);
+          }
+        } else if (m === 'INT') {
+          if (ops[0] === '21H') {
+            const ah = (cpu.regs.AX >> 8) & 0xFF;
+            if (ah === 0x09) {
+              let addr = cpu.regs.DX;
+              let s = '';
+              while (cpu.mem[addr] !== 0x24 && addr < 65535) { // '$'
+                s += String.fromCharCode(cpu.mem[addr++]);
+              }
+              cpu.output.push(s);
+            } else if (ah === 0x02) {
+              cpu.output.push(String.fromCharCode(cpu.regs.DX & 0xFF));
+            } else if (ah === 0x4C) {
+              cpu.halted = true;
+            }
+          }
+        }
+      } catch (err) {
+        console.error(err);
+      }
+
+      cpu.stepCount++;
+      cpu.ipIdx = nextIp;
+      cpu.regs.IP = 0x0100 + cpu.ipIdx * 3;
+      updateUI();
+    }
+
+    // UI Updates
+    function updateUI() {
+      // Step counter & status
+      document.getElementById('step-counter').innerText = 'Steps: ' + cpu.stepCount;
+      const statusText = document.getElementById('status-text');
+      const statusPill = document.getElementById('status-pill').firstElementChild;
+      if (cpu.halted) {
+        statusText.innerText = 'Halted (Done)';
+        statusPill.className = 'w-2 h-2 rounded-full bg-editor-green';
+      } else if (program) {
+        statusText.innerText = 'Running / Ready';
+        statusPill.className = 'w-2 h-2 rounded-full bg-editor-amber';
+      }
+
+      // Console
+      document.getElementById('console-output').innerText = cpu.output.join('');
+
+      // Registers
+      const renderReg = (name, val) => {
+        const isCh = cpu.changedRegs.has(name);
+        return `<div class="flex items-center justify-between bg-editor-surface/40 px-2 py-1 rounded \${isCh ? 'border border-editor-amber/50 bg-editor-amber/10' : ''}">
+          <span class="text-editor-subtext">\${name}</span>
+          <span class="font-bold \${isCh ? 'text-editor-amber' : 'text-editor-accent'}">\${toHex4(val)}</span>
+        </div>`;
+      };
+
+      document.getElementById('gen-regs').innerHTML =
+        renderReg('AX', cpu.regs.AX) + renderReg('BX', cpu.regs.BX) +
+        renderReg('CX', cpu.regs.CX) + renderReg('DX', cpu.regs.DX);
+
+      document.getElementById('ptr-regs').innerHTML =
+        renderReg('SI', cpu.regs.SI) + renderReg('DI', cpu.regs.DI) +
+        renderReg('SP', cpu.regs.SP) + renderReg('BP', cpu.regs.BP);
+
+      document.getElementById('seg-regs').innerHTML =
+        renderReg('CS', cpu.regs.CS) + renderReg('DS', cpu.regs.DS) +
+        renderReg('SS', cpu.regs.SS) + renderReg('IP', cpu.regs.IP);
+
+      // Flags
+      let flagsHtml = '';
+      for (const [k, v] of Object.entries(cpu.flags)) {
+        flagsHtml += `<div class="p-1 rounded text-[10px] font-bold \${v ? 'bg-editor-accent/20 text-editor-accent border border-editor-accent/40' : 'bg-editor-surface/40 text-editor-subtext'}">
+          \${k}: \${v ? '1' : '0'}
+        </div>`;
+      }
+      document.getElementById('flags-grid').innerHTML = flagsHtml;
+
+      // Memory Table (16 rows)
+      const baseAddr = parseInt(document.getElementById('mem-addr-input').value, 16) || 0x0300;
+      let memHtml = '<table class="w-full text-left"><thead><tr class="text-editor-subtext text-[10px]"><th class="pb-1">Addr</th>';
+      for (let i = 0; i < 8; i++) memHtml += `<th class="pb-1">\${i.toString(16).toUpperCase()}</th>`;
+      memHtml += '</tr></thead><tbody>';
+
+      for (let r = 0; r < 12; r++) {
+        const rowAddr = (baseAddr + r * 8) & 0xFFFF;
+        memHtml += `<tr class="hover:bg-editor-surface/30"><td class="text-editor-subtext">\${toHex4(rowAddr)}:</td>`;
+        for (let c = 0; c < 8; c++) {
+          const byteVal = cpu.mem[(rowAddr + c) & 0xFFFF];
+          memHtml += `<td class="text-center \${byteVal !== 0 ? 'text-editor-text font-bold' : 'text-editor-subtext/40'}">\${toHex2(byteVal)}</td>`;
+        }
+        memHtml += '</tr>';
+      }
+      memHtml += '</tbody></table>';
+      document.getElementById('memory-grid').innerHTML = memHtml;
+    }
+
+    // Init App
+    window.addEventListener('DOMContentLoaded', () => {
+      const editor = document.getElementById('code-editor');
+      editor.value = SAMPLE_CODE;
+
+      // Line numbers sync
+      const updateLineNumbers = () => {
+        const lines = editor.value.split('\\n').length;
+        document.getElementById('line-numbers').innerHTML = Array.from({length: lines}, (_, i) => i + 1).join('<br>');
+      };
+      editor.addEventListener('input', updateLineNumbers);
+      updateLineNumbers();
+
+      // Check URL hash for shared code
+      if (window.location.hash && window.location.hash.startsWith('#code=')) {
+        try {
+          const bin = atob(window.location.hash.slice(6));
+          const bytes = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+          editor.value = new TextDecoder().decode(bytes);
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      // Open File
+      const fileInput = document.getElementById('file-open-input');
+      document.getElementById('btn-open').addEventListener('click', () => fileInput.click());
+      fileInput.addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (evt) => {
+          editor.value = evt.target.result;
+          updateLineNumbers();
+          document.getElementById('btn-assemble').click();
+        };
+        reader.readAsText(file);
+        e.target.value = '';
+      });
+
+      // Save File
+      document.getElementById('btn-save').addEventListener('click', () => {
+        const blob = new Blob([editor.value], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'program.asm';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+
+      // Share Link
+      document.getElementById('btn-share').addEventListener('click', () => {
+        const bytes = new TextEncoder().encode(editor.value);
+        let bin = '';
+        for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+        const hash = btoa(bin);
+        const url = new URL(window.location.href);
+        url.hash = `code=${hash}`;
+        window.history.replaceState(null, '', url.toString());
+        navigator.clipboard.writeText(url.toString()).then(() => {
+          const btn = document.getElementById('btn-share');
+          btn.textContent = '✓ Copied!';
+          setTimeout(() => { btn.textContent = '🔗 Share'; }, 2000);
+        });
+      });
+
+      let history = [];
+      let animTimer = null;
+
+      function snapshotCpu() {
+        return {
+          regs: { ...cpu.regs },
+          flags: { ...cpu.flags },
+          mem: cpu.mem.slice(),
+          ipIdx: cpu.ipIdx,
+          halted: cpu.halted,
+          stepCount: cpu.stepCount,
+          output: [...cpu.output]
+        };
+      }
+
+      function restoreCpu(snap) {
+        cpu.regs = { ...snap.regs };
+        cpu.flags = { ...snap.flags };
+        cpu.mem = snap.mem.slice();
+        cpu.ipIdx = snap.ipIdx;
+        cpu.halted = snap.halted;
+        cpu.stepCount = snap.stepCount;
+        cpu.output = [...snap.output];
+        cpu.changedRegs = new Set();
+      }
+
+      function updateBackBtn() {
+        const btnBack = document.getElementById('btn-step-back');
+        if (btnBack) {
+          btnBack.disabled = history.length === 0 || animTimer !== null;
+          btnBack.title = history.length > 0 ? `Step Back (${history.length} steps in history)` : 'Step Back (no history)';
+        }
+      }
+
+      function stopAnimation() {
+        if (animTimer !== null) {
+          clearInterval(animTimer);
+          animTimer = null;
+          const btn = document.getElementById('btn-animate');
+          if (btn) {
+            btn.innerHTML = '▶ Animate';
+            btn.className = 'bg-editor-surface hover:bg-editor-green/20 hover:text-editor-green px-2.5 py-1 rounded font-medium transition flex items-center gap-1';
+          }
+        }
+      }
+
+      // Assemble Button
+      document.getElementById('btn-assemble').addEventListener('click', () => {
+        stopAnimation();
+        history = [];
+        cpu.ipIdx = 0;
+        cpu.stepCount = 0;
+        cpu.output = [];
+        cpu.halted = false;
+        cpu.regs.IP = 0x0100;
+        program = assembleCode(editor.value);
+        updateBackBtn();
+        updateUI();
+      });
+
+      // Step Forward Button
+      document.getElementById('btn-step').addEventListener('click', () => {
+        stopAnimation();
+        if (!program) document.getElementById('btn-assemble').click();
+        if (cpu.halted) return;
+        history.push(snapshotCpu());
+        if (history.length > 100) history.shift();
+        stepExecution();
+        updateBackBtn();
+      });
+
+      // Step Back Button
+      document.getElementById('btn-step-back').addEventListener('click', () => {
+        stopAnimation();
+        if (history.length === 0) return;
+        const prev = history.pop();
+        restoreCpu(prev);
+        updateBackBtn();
+        updateUI();
+        document.getElementById('status-text').textContent = `Stepped back to step ${cpu.stepCount}`;
+      });
+
+      // Animate / Pause Button
+      document.getElementById('btn-animate').addEventListener('click', () => {
+        if (animTimer !== null) {
+          stopAnimation();
+          document.getElementById('status-text').textContent = 'Paused.';
+          return;
+        }
+        if (!program) document.getElementById('btn-assemble').click();
+        if (cpu.halted) document.getElementById('btn-assemble').click();
+
+        const btn = document.getElementById('btn-animate');
+        btn.innerHTML = '⏸ Pause';
+        btn.className = 'bg-editor-amber/20 hover:bg-editor-amber/30 text-editor-amber border border-editor-amber/40 px-2.5 py-1 rounded font-medium transition flex items-center gap-1';
+        document.getElementById('status-text').textContent = 'Animating execution…';
+
+        const speed = parseInt(document.getElementById('anim-speed').value, 10) || 100;
+        animTimer = setInterval(() => {
+          if (cpu.halted) {
+            stopAnimation();
+            return;
+          }
+          history.push(snapshotCpu());
+          if (history.length > 100) history.shift();
+          stepExecution();
+          updateBackBtn();
+        }, speed);
+      });
+
+      // Fast Run Button
+      document.getElementById('btn-run').addEventListener('click', () => {
+        stopAnimation();
+        if (!program) document.getElementById('btn-assemble').click();
+        if (cpu.halted) return;
+        history.push(snapshotCpu());
+        let limit = 10000;
+        while (!cpu.halted && limit-- > 0) {
+          stepExecution();
+        }
+        updateBackBtn();
+      });
+
+      // Reset Button
+      document.getElementById('btn-reset').addEventListener('click', () => {
+        stopAnimation();
+        history = [];
+        cpu.regs = { AX: 0, BX: 0, CX: 0, DX: 0, SI: 0, DI: 0, SP: 0xFFFE, BP: 0, IP: 0x0100, CS: 0, DS: 0, SS: 0, ES: 0 };
+        cpu.flags = { CF: false, ZF: false, SF: false, OF: false, PF: false, AF: false, DF: false, IF: true };
+        cpu.mem.fill(0);
+        cpu.output = [];
+        cpu.stepCount = 0;
+        cpu.halted = false;
+        program = null;
+        updateBackBtn();
+        updateUI();
+      });
+
+      // Tabs
+      document.getElementById('tab-regs').addEventListener('click', () => {
+        document.getElementById('panel-regs').classList.remove('hidden');
+        document.getElementById('panel-mem').classList.add('hidden');
+        document.getElementById('tab-regs').className = 'flex-1 py-1.5 border-b-2 border-editor-accent text-editor-accent font-semibold text-center';
+        document.getElementById('tab-mem').className = 'flex-1 py-1.5 border-b-2 border-transparent text-editor-subtext hover:text-editor-text text-center';
+      });
+
+      document.getElementById('tab-mem').addEventListener('click', () => {
+        document.getElementById('panel-regs').classList.add('hidden');
+        document.getElementById('panel-mem').classList.remove('hidden');
+        document.getElementById('tab-mem').className = 'flex-1 py-1.5 border-b-2 border-editor-accent text-editor-accent font-semibold text-center';
+        document.getElementById('tab-regs').className = 'flex-1 py-1.5 border-b-2 border-transparent text-editor-subtext hover:text-editor-text text-center';
+      });
+
+      document.getElementById('mem-jump-btn').addEventListener('click', updateUI);
+
+      document.getElementById('btn-clear-console').addEventListener('click', () => {
+        cpu.output = [];
+        document.getElementById('console-output').innerText = '';
+      });
+
+      // Keyboard shortcuts
+      window.addEventListener('keydown', (e) => {
+        if (e.key === 'F5') {
+          e.preventDefault();
+          document.getElementById('btn-assemble').click();
+        } else if (e.key === 'F10') {
+          e.preventDefault();
+          document.getElementById('btn-step').click();
+        }
+      });
+
+      updateUI();
+    });
+  </script>
+</body>
+</html>
+

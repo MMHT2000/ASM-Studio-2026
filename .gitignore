@@ -1,0 +1,42 @@
+# Node & Web dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Production and build outputs
+dist/
+dist-ssr/
+*.tsbuildinfo
+
+# .NET & C# build artifacts
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.pdb
+
+# Local release binaries & archives
+release/
+release-selfcontained/
+ASMStudio-v1.0-Win64/
+*.zip
+
+# Logs & temp
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.system_generated/
+scripts/smoke_test.ps1
+
+# OS generated
+Thumbs.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# IDEs
+.vscode/
+.idea/
