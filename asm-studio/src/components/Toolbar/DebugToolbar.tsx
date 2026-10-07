@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 import { 
   Play, Pause, Square, ChevronLeft, ChevronRight, RotateCcw, 
-  Cpu, AlertCircle, CheckCircle, Loader2, PauseCircle, Zap, Gauge, Settings as SettingsIcon 
+  Cpu, AlertCircle, CheckCircle, Loader2, PauseCircle, Zap, Gauge, Settings as SettingsIcon,
+  Coffee
 } from 'lucide-react';
 import { useEmulatorStore } from '../../store/emulatorStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -248,6 +249,18 @@ export default function DebugToolbar() {
           Steps: <span className="text-editor-accent font-semibold">{stepCount}</span>
         </div>
       )}
+
+      {/* Buy Me a Coffee Button */}
+      <a
+        href="https://buymeacoffee.com/MMHT2000"
+        target="_blank"
+        rel="noopener noreferrer"
+        title="Support MMHT2000 on Buy Me a Coffee"
+        className="flex items-center gap-1.5 px-2 py-1 rounded text-xs text-amber-300 hover:text-amber-200 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30 transition shrink-0 cursor-pointer"
+      >
+        <Coffee className="w-3.5 h-3.5 text-amber-400" />
+        <span className="hidden md:inline font-medium text-xs">Buy Me a Coffee</span>
+      </a>
 
       {/* Settings Button */}
       <button

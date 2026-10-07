@@ -131,6 +131,12 @@ chmod +x install.sh
   * Theme switcher (Cyber Dark, Slate Navy, Matrix Green, Classic Light, High Contrast).
   * Custom editor backgrounds, syntax colors, font families, and sizes.
   * Adjustable step-by-step emulation speeds (1 Hz to Max Speed).
+
+---
+
+### ☕ Support the Project
+If you enjoy using **ASM Studio 2026** for your university studies, teaching, or assembly projects, you can support continued development here:
+👉 **[buymeacoffee.com/MMHT2000](https://buymeacoffee.com/MMHT2000)**
 "@
 
 if ($release) {

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { 
   Settings as SettingsIcon, X, Sliders, Cpu, 
   Sparkles, Keyboard, RotateCcw, Check, Eye, EyeOff, ExternalLink,
-  Palette, Type
+  Palette, Type, Coffee
 } from 'lucide-react';
 import { useSettingsStore, type AiProvider } from '../../store/settingsStore';
 import { THEME_PRESETS, FONT_FAMILIES, type EditorThemeId } from '../../lib/themeManager';
@@ -672,17 +672,30 @@ export default function SettingsModal() {
 
         {/* Footer */}
         <div className="px-5 py-3 border-t border-editor-border flex items-center justify-between bg-editor-bg/40">
-          <button
-            onClick={() => {
-              if (confirm('Reset all settings to default values?')) {
-                reset();
-              }
-            }}
-            className="flex items-center gap-1.5 text-editor-subtext hover:text-editor-red text-xs transition"
-          >
-            <RotateCcw className="w-3.5 h-3.5" />
-            <span>Reset to Defaults</span>
-          </button>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                if (confirm('Reset all settings to default values?')) {
+                  reset();
+                }
+              }}
+              className="flex items-center gap-1.5 text-editor-subtext hover:text-editor-red text-xs transition"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset to Defaults</span>
+            </button>
+
+            <a
+              href="https://buymeacoffee.com/MMHT2000"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 text-xs transition"
+              title="Support development of ASM Studio"
+            >
+              <Coffee className="w-3.5 h-3.5" />
+              <span>Support on Buy Me a Coffee</span>
+            </a>
+          </div>
 
           <button
             onClick={close}

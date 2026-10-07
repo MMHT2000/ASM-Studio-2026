@@ -7,6 +7,7 @@
 [![Release](https://img.shields.io/github/v/release/MMHT2000/ASM-Studio-2026?style=flat-square&color=cba6f7)](https://github.com/MMHT2000/ASM-Studio-2026/releases)
 [![Platform](https://img.shields.io/badge/platform-Ubuntu%20%2F%20Linux%20%7C%20Windows%20x64-blue?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026/releases)
 [![Tests](https://img.shields.io/badge/tests-28%2F28%20passing%20(100%25)-green?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026)
+[![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-MMHT2000-FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/MMHT2000)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
 [![Built With](https://img.shields.io/badge/built%20with-React%2018%20%2B%20Electron%20%2B%20.NET%2010-89b4fa?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026)
 
@@ -245,8 +246,18 @@ The compiled executable will be located at `release-selfcontained/ASMStudio.exe`
 
 ---
 
+## ☕ Support the Project
+
+If **ASM Studio 2026** helps your studies, university coursework, or 8086 assembly research, consider supporting continued development:
+
+[![Buy Me A Coffee](https://img.buymeacoffee.com/button-api/?text=Buy%20me%20a%20coffee&emoji=%E2%98%95&slug=MMHT2000&button_colour=FFDD00&font_colour=000000&font_family=Cookie&outline_colour=000000&coffee_colour=ffffff)](https://buymeacoffee.com/MMHT2000)
+
+Your support helps keep ASM Studio 2026 open-source, maintained, and continuously updated with new features and hardware modules!
+
+---
+
 ## 📄 License
 
 This project is licensed under the MIT License — see the [LICENSE](./LICENSE) file for details.
 
-Developed with ❤️ for computer science students and vintage computing enthusiasts.
+Developed with ❤️ by **MMHT2000** for computer science students and vintage computing enthusiasts.
