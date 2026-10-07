@@ -5,14 +5,14 @@
 # ASM Studio 2026 — Intel 8086 Assembly IDE & Teaching Suite
 
 [![Release](https://img.shields.io/github/v/release/MMHT2000/ASM-Studio-2026?style=flat-square&color=cba6f7)](https://github.com/MMHT2000/ASM-Studio-2026/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20x64%20%7C%20Web-blue?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026/releases)
+[![Platform](https://img.shields.io/badge/platform-Ubuntu%20%2F%20Linux%20%7C%20Windows%20x64-blue?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026/releases)
 [![Tests](https://img.shields.io/badge/tests-28%2F28%20passing%20(100%25)-green?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
-[![Built With](https://img.shields.io/badge/built%20with-React%2018%20%2B%20Vite%20%2B%20.NET%2010-89b4fa?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026)
+[![Built With](https://img.shields.io/badge/built%20with-React%2018%20%2B%20Electron%20%2B%20.NET%2010-89b4fa?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026)
 
 **A modern, lightning-fast, and pedagogical Intel 8086 Microprocessor IDE designed to replace legacy 16-bit DOS-box emulators for university students, educators, and systems engineers.**
 
-[Download Windows Executable (v1.0.0)](https://github.com/MMHT2000/ASM-Studio-2026/releases) • [Features](#key-features) • [Keyboard Shortcuts](#keyboard-shortcuts) • [Architecture](#system-architecture) • [Building from Source](#building-from-source)
+[🐧 Ubuntu/Debian (.deb)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/asm-studio-2026_1.0.0_amd64.deb) • [🐧 Linux Portable (.tar.gz)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz) • [💻 Windows (.zip)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Windows-x64.zip) • [Installation Guide](#-installation--downloads) • [Features](#key-features)
 
 </div>
 
@@ -31,7 +31,51 @@
 * **Multi-Provider AI Co-Pilot Tutor**: Connect **Google Gemini**, **OpenAI** (GPT-4o, GPT-5, GPT-6, o3-mini), or **Anthropic Claude** with open-ended model inputs, custom API Base URLs (OpenRouter, Ollama, LM Studio), and built-in offline diagnostic heuristics.
 * **Monaco Code Editor**: Professional assembly editor featuring MASM/Emu8086 tokenization, opcode hover documentation, line glyph breakpoints, and lint diagnostics.
 * **Appearance Customization**: 7 themes (Catppuccin Mocha, VS Code Dark+, One Dark Pro, Monokai, Dracula, GitHub Light, Custom), font families (JetBrains Mono, Fira Code), and custom color pickers.
-* **Native Windows Standalone Executable**: Packaged as a 100% self-contained 64-bit Windows desktop app powered by .NET 10 and Microsoft WebView2 with dark titlebar integration and zero open ports.
+* **Multi-Platform Native Applications**:
+  * **Ubuntu / Debian**: Native `.deb` package with full desktop menu and icon integration.
+  * **Universal Linux**: Zero-install portable `.tar.gz` with launcher and optional user desktop installer (`install.sh`).
+  * **Windows 10 / 11**: 100% self-contained standalone `.exe` powered by .NET 10 & Microsoft WebView2 with dark titlebar.
+
+---
+
+## 📦 Installation & Downloads
+
+Official pre-built releases are published on the **[GitHub Releases Page](https://github.com/MMHT2000/ASM-Studio-2026/releases)**.
+
+### 🐧 Ubuntu & Debian Systems (`.deb`)
+Recommended for Ubuntu 20.04, 22.04, 24.04, Debian 11/12, and Linux Mint:
+```bash
+# 1. Download the latest .deb package
+wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/asm-studio-2026_1.0.0_amd64.deb
+
+# 2. Install using apt (resolves system dependencies automatically)
+sudo apt update
+sudo apt install ./asm-studio-2026_1.0.0_amd64.deb
+
+# 3. Launch from Ubuntu application launcher or terminal
+asm-studio
+```
+
+### 🐧 Portable Linux Tarball (`.tar.gz`)
+Works on **any** 64-bit Linux distribution (Fedora, Arch, openSUSE, Manjaro) without requiring root/sudo privileges:
+```bash
+# 1. Download and extract
+wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz
+tar -xzf ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz
+cd ASM-Studio-2026-v1.0.0-Linux-x64
+
+# 2. Run directly
+./asm-studio
+
+# 3. (Optional) Register in your desktop application menu:
+chmod +x install.sh
+./install.sh
+```
+
+### 💻 Windows 10 & 11 (`.zip`)
+1. Download **[ASM-Studio-2026-v1.0.0-Windows-x64.zip](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Windows-x64.zip)**.
+2. Extract the archive anywhere on your disk.
+3. Double-click `ASMStudio.exe` to run immediately (offline, zero dependencies).
 
 ---
 

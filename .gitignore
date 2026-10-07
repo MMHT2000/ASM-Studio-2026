@@ -22,6 +22,11 @@ release/
 release-selfcontained/
 ASMStudio-v1.0-Win64/
 *.zip
+*.deb
+*.tar.gz
+build-linux-staging/
+release-linux/
+download/
 
 # Logs & temp
 *.log
@@ -40,3 +45,4 @@ $RECYCLE.BIN/
 # IDEs
 .vscode/
 .idea/
+

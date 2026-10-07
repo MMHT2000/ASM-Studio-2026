@@ -10,3 +10,4 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $sizeMb = [Math]::Round((Get-Item $zipFile).Length / 1MB, 2)
 Write-Output "SUCCESS: Created $zipFile ($sizeMb MB)"
+

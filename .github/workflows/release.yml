@@ -1,4 +1,4 @@
-name: Build & Release Desktop Binary
+name: Build & Release Multi-Platform Binaries
 
 on:
   push:
@@ -10,7 +10,8 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  build-windows:
+    name: Build Windows Desktop Executable
     runs-on: windows-latest
 
     steps:
@@ -45,7 +46,7 @@ jobs:
         working-directory: ./ASMStudio-App
         run: dotnet publish -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -o ../dist-desktop
 
-      - name: Package Release Zip
+      - name: Package Windows Zip Archive
         shell: pwsh
         run: |
           $ver = "${{ github.ref_name }}"
@@ -54,29 +55,88 @@ jobs:
           Compress-Archive -Path ./dist-desktop/* -DestinationPath "./$zipName" -Force
           Write-Output "Created $zipName"
 
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v2
-        if: startsWith(github.ref, 'refs/tags/')
+      - name: Upload Windows Artifact
+        uses: actions/upload-artifact@v4
         with:
-          files: ASM-Studio-2026-*-Windows-x64.zip
-          name: ASM Studio 2026 ${{ github.ref_name }}
+          name: windows-binary
+          path: ASM-Studio-2026-*-Windows-x64.zip
+
+  build-linux:
+    name: Build Ubuntu / Linux Packages (.deb & .tar.gz)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+          cache-dependency-path: asm-studio/package-lock.json
+
+      - name: Install Web Dependencies
+        working-directory: ./asm-studio
+        run: npm ci
+
+      - name: Run Test Suite
+        working-directory: ./asm-studio
+        run: npm test
+
+      - name: Build Web Application Bundle
+        working-directory: ./asm-studio
+        run: npm run build
+
+      - name: Download Electron Linux Runtime
+        run: |
+          mkdir -p download build-linux-staging
+          curl -L -o download/electron-linux.zip https://github.com/electron/electron/releases/download/v32.2.0/electron-v32.2.0-linux-x64.zip
+          unzip -q download/electron-linux.zip -d build-linux-staging
+
+      - name: Assemble Linux Portable Tarball and Debian Package
+        run: node scripts/build_linux_packages.mjs
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: |
+            *.deb
+            *.tar.gz
+
+  release:
+    name: Publish Multi-Platform GitHub Release
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/')
+
+    steps:
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+
+      - name: Flatten Artifacts Directory
+        run: |
+          mkdir -p release-assets
+          find . -name "*.zip" -exec cp {} release-assets/ \;
+          find . -name "*.deb" -exec cp {} release-assets/ \;
+          find . -name "*.tar.gz" -exec cp {} release-assets/ \;
+          ls -la release-assets/
+
+      - name: Create Multi-Platform GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: release-assets/*
+          name: ASM Studio 2026 ${{ github.ref_name }} (Windows & Ubuntu/Linux)
           draft: false
           prerelease: false
           body: |
-            ## 🚀 ASM Studio 2026 — Modern Intel 8086 Assembly IDE
+            ## 🚀 ASM Studio 2026 — Multi-Platform Intel 8086 Assembly IDE
 
-            ### Highlights & Features:
-            - **Intel 8086 CPU Emulation**: 16-bit Real Mode architecture, 14 registers, 9 status flags, segmented memory space (0000h–FFFFh).
-            - **Monaco Code Editor**: MASM/Emu8086 syntax highlighting, opcode documentation hovers, autocomplete, breakpoints.
-            - **Virtual Hardware Devices**: 8-Bit LED bar (Port 0378h), Traffic Lights (Port 0379h), and 4-Digit 7-Segment Display (Port 0300h).
-            - **Time-Travel Debugger**: Step Back / Undo instruction (<kbd>Shift+F10</kbd> / <kbd>F8</kbd>) with 150-step deterministic snapshot stack.
-            - **Animated Step-by-Step Run**: Controllable execution frequency from 1 Hz up to 60 Hz with live register mutation glow.
-            - **Interactive Memory Hex Editor**: Double-click byte editing, segment preset jumps (.DATA, .CODE, STACK, IVT), cell inspector.
-            - **Multi-Provider AI Tutor**: Connect Google Gemini, OpenAI (GPT-4o, GPT-5, GPT-6, o3-mini), or Anthropic Claude with open model selection and custom API Base URL.
-            - **Editor Customization**: 7 themes (Catppuccin Mocha, VS Code Dark+, Monokai, Dracula, One Dark, GitHub Light, Custom), font families (JetBrains Mono, Fira Code), and custom color pickers.
-            - **File Management & Sharing**: Save/Open `.asm`, Export Listing `.lst`, Export Binary `.com`, and share code via URL hash.
-
-            ### Download & Run:
-            1. Download `ASM-Studio-2026-v1.0.0-Windows-x64.zip` below.
-            2. Extract anywhere on your Windows PC.
-            3. Double-click `ASMStudio.exe` to launch immediately (100% offline, zero setup required).
+            ### 📦 Official Binaries & Packages:
+            - **Ubuntu / Debian (`.deb`)**: `asm-studio-2026_${{ github.ref_name }}_amd64.deb`
+              Install with: `sudo apt install ./asm-studio-2026_${{ github.ref_name }}_amd64.deb`
+            - **Universal Linux (`.tar.gz`)**: `ASM-Studio-2026-${{ github.ref_name }}-Linux-x64.tar.gz`
+              Extract and run `./asm-studio` or run `./install.sh` to add desktop shortcuts.
+            - **Windows 10 / 11 (`.zip`)**: `ASM-Studio-2026-${{ github.ref_name }}-Windows-x64.zip`
+              Extract and run `ASMStudio.exe` (100% offline, zero setup).

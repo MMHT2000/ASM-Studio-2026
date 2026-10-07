@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=ASM Studio 2026
+Comment=Modern Intel 8086 Assembly IDE, Visual Emulator & AI Tutor
+Exec=asm-studio %U
+Icon=asm-studio
+Terminal=false
+Type=Application
+Categories=Development;IDE;Debugger;
+Keywords=assembly;8086;emu8086;simulator;ide;
+StartupWMClass=ASM Studio 2026
+MimeType=text/x-asm;
+

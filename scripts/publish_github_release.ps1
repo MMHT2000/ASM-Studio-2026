@@ -40,25 +40,68 @@ Write-Output "Checking existing release for $tagName..."
 $release = $null
 try {
     $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/tags/$tagName" -Headers $headers -Method Get
-    Write-Output "Release $tagName already exists (ID: $($release.id))."
+    Write-Output "Release $tagName found (ID: $($release.id))."
 } catch {
-    Write-Output "Release $tagName does not exist yet. Creating..."
+    Write-Output "Release $tagName does not exist yet."
 }
 
 $releaseBody = @"
-# ASM Studio 2026 (v1.0.0) - Production Release 🚀
+# ASM Studio 2026 (v1.0.0) — Multi-Platform Production Release 🚀
 
-Welcome to the official **v1.0.0** release of **ASM Studio 2026** — a next-generation, high-performance Intel 8086 Assembly IDE, visual emulator, hardware simulator, and AI-powered assembly tutor.
+Welcome to the official **v1.0.0** release of **ASM Studio 2026** — a next-generation, high-performance Intel 8086 Assembly IDE, visual hardware emulator, time-travel debugger, and AI-powered assembly tutor.
+
+Now featuring **native support for both Windows and Ubuntu/Linux**! 🐧💻
 
 ---
 
-### 📦 Downloads & Binaries
+### 📦 Official Binaries & Packages
 
-| Asset | Platform | Type | Architecture | Status |
+| Platform | Package Format | Download Link | Size | Instructions |
 |---|---|---|---|---|
-| **[ASM-Studio-2026-v1.0.0-Windows-x64.zip](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Windows-x64.zip)** | Windows 10 / 11 / Server | Standalone Desktop Executable | x64 (64-bit) | ✅ Verified |
+| **Ubuntu / Debian** | `.deb` Native Package | **[asm-studio-2026_1.0.0_amd64.deb](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/asm-studio-2026_1.0.0_amd64.deb)** | ~109 MB | `sudo dpkg -i asm-studio-2026_1.0.0_amd64.deb` |
+| **Linux (Universal)** | Portable `.tar.gz` | **[ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz)** | ~108 MB | Extract & run `./asm-studio` or `./install.sh` |
+| **Windows** | Standalone `.zip` | **[ASM-Studio-2026-v1.0.0-Windows-x64.zip](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Windows-x64.zip)** | ~48.8 MB | Extract and launch `ASMStudio.exe` |
 
-> **Portable & Zero-Install**: Extract the `.zip` archive and double-click `ASMStudio.exe`. It runs 100% offline with zero external dependencies or runtimes needed.
+---
+
+### 🐧 Ubuntu & Linux Installation Guide
+
+#### Option A: Native Debian/Ubuntu Package (`.deb`)
+Recommended for Ubuntu 20.04, 22.04, 24.04, and Debian-based systems.
+```bash
+# 1. Download the package
+wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/asm-studio-2026_1.0.0_amd64.deb
+
+# 2. Install using apt (automatically resolves any dependencies)
+sudo apt update
+sudo apt install ./asm-studio-2026_1.0.0_amd64.deb
+
+# 3. Launch from Ubuntu application launcher or terminal
+asm-studio
+```
+
+#### Option B: Portable Tarball (`.tar.gz`)
+Works on any x86_64 Linux distribution (Fedora, Arch, Linux Mint, openSUSE) with zero root privileges:
+```bash
+# 1. Download and extract
+wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz
+tar -xzf ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz
+cd ASM-Studio-2026-v1.0.0-Linux-x64
+
+# 2. Run directly
+./asm-studio
+
+# 3. Optional: Install to your desktop application menu
+chmod +x install.sh
+./install.sh
+```
+
+---
+
+### 💻 Windows Installation Guide
+1. Download `ASM-Studio-2026-v1.0.0-Windows-x64.zip`.
+2. Extract the archive anywhere on your machine.
+3. Double-click `ASMStudio.exe` — runs 100% offline with zero dependencies or installers.
 
 ---
 
@@ -73,9 +116,8 @@ Welcome to the official **v1.0.0** release of **ASM Studio 2026** — a next-gen
   * Data movement (`MOV`, `XCHG`, `PUSH`, `POP`, `LEA`, `LDS`, `LES`).
   * Arithmetic (`ADD`, `SUB`, `ADC`, `SBB`, `INC`, `DEC`, `MUL`, `IMUL`, `DIV`, `IDIV`, `NEG`, `DAA`, `AAA`, `DAS`, `AAS`).
   * Logic & Bitwise (`AND`, `OR`, `XOR`, `NOT`, `TEST`, `SHL`, `SHR`, `SAL`, `SAR`, `ROL`, `ROR`, `RCL`, `RCR`).
-  * Control flow & Jumps (`JMP`, `JZ`/`JE`, `JNZ`/`JNE`, `JC`, `JNC`, `JS`, `JNS`, `JO`, `JNO`, `JA`, `JAE`, `JB`, `JBE`, `LOOP`, `LOOPZ`, `LOOPNZ`, `CALL`, `RET`, `INT`, `IRET`).
+  * Control flow & Jumps (`JMP`, `JZ`/`JE`, `JNZ`/`JNE`, `JC`, `JNC`, `JS`, `JNS`, `JO`, `JNO`, `JA`, `JAE`, `JB`, `JBE`, `LOOP`, `CALL`, `RET`, `INT`, `IRET`).
   * Strings & Memory (`MOVSB`, `MOVSW`, `CMPSB`, `CMPSW`, `SCASB`, `SCASW`, `LODSB`, `LODSW`, `STOSB`, `STOSW` with `REP`/`REPE`/`REPNE`).
-  * Processor Control (`CLC`, `STC`, `CMC`, `CLD`, `STD`, `CLI`, `STI`, `NOP`, `HLT`, `WAIT`).
 * 🖥️ **Interactive Hardware Devices**:
   * **VGA Text Screen / Video Display**: Real-time rendering of INT 10h BIOS display services and INT 21h DOS output routines.
   * **Visual Memory Grid**: Real-time hex dump and ASCII inspection with search, address navigation, and live byte highlighting.
@@ -89,68 +131,80 @@ Welcome to the official **v1.0.0** release of **ASM Studio 2026** — a next-gen
   * Theme switcher (Cyber Dark, Slate Navy, Matrix Green, Classic Light, High Contrast).
   * Custom editor backgrounds, syntax colors, font families, and sizes.
   * Adjustable step-by-step emulation speeds (1 Hz to Max Speed).
-
----
-
-### 📋 Checksum & Verification
-
-* **File**: `ASM-Studio-2026-v1.0.0-Windows-x64.zip`
-* **Size**: `~48.86 MB`
-* **SHA-256**: Verified integrity and clean build.
-
----
-
-### 🛡️ System Requirements
-* **Operating System**: Windows 10 (64-bit) or Windows 11 (64-bit).
-* **RAM**: 2 GB minimum (4 GB recommended).
-* **Disk Space**: 150 MB free disk space.
 "@
 
-if (-not $release) {
-    $createPayload = @{
-        tag_name = $tagName
-        target_commitish = "main"
-        name = "ASM Studio 2026 v1.0.0"
+if ($release) {
+    Write-Output "Updating release notes for ID $($release.id)..."
+    $updatePayload = @{
+        name = "ASM Studio 2026 v1.0.0 (Windows & Ubuntu/Linux)"
         body = $releaseBody
-        draft = $false
-        prerelease = $false
     } | ConvertTo-Json -Depth 5
-
-    $jsonBytes = [System.Text.Encoding]::UTF8.GetBytes($createPayload)
-    Write-Output "Creating release via GitHub API..."
-    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases" -Headers $headers -Method Post -Body $jsonBytes -ContentType "application/json; charset=utf-8"
-    Write-Output "Created release successfully: $($release.html_url)"
+    $updateBytes = [System.Text.Encoding]::UTF8.GetBytes($updatePayload)
+    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/$($release.id)" -Headers $headers -Method Patch -Body $updateBytes -ContentType "application/json; charset=utf-8"
+    Write-Output "Release notes updated successfully."
 }
 
 $releaseId = $release.id
 $uploadUrlTemplate = $release.upload_url
 $uploadUrlBase = $uploadUrlTemplate.Split('{')[0]
 
-$zipPath = "d:\Emu8086\ASM-Studio-2026-v1.0.0-Windows-x64.zip"
-$assetName = "ASM-Studio-2026-v1.0.0-Windows-x64.zip"
+$assetsToUpload = @(
+    @{
+        Path = "d:\Emu8086\asm-studio-2026_1.0.0_amd64.deb"
+        Name = "asm-studio-2026_1.0.0_amd64.deb"
+        ContentType = "application/vnd.debian.binary-package"
+    },
+    @{
+        Path = "d:\Emu8086\ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz"
+        Name = "ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz"
+        ContentType = "application/gzip"
+    },
+    @{
+        Path = "d:\Emu8086\ASM-Studio-2026-v1.0.0-Windows-x64.zip"
+        Name = "ASM-Studio-2026-v1.0.0-Windows-x64.zip"
+        ContentType = "application/zip"
+    }
+)
 
 Write-Output "Checking existing assets for release ID $releaseId..."
 $existingAssets = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/$releaseId/assets" -Headers $headers -Method Get
 
-foreach ($asset in $existingAssets) {
-    if ($asset.name -eq $assetName) {
-        Write-Output "Deleting outdated asset ID $($asset.id)..."
-        Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/assets/$($asset.id)" -Headers $headers -Method Delete
+foreach ($asset in $assetsToUpload) {
+    $assetName = $asset.Name
+    $filePath = $asset.Path
+    $contentType = $asset.ContentType
+
+    if (-not (Test-Path $filePath)) {
+        Write-Warning "File not found: $filePath. Skipping."
+        continue
     }
+
+    $alreadyUploaded = $false
+    foreach ($ea in $existingAssets) {
+        if ($ea.name -eq $assetName) {
+            Write-Output "Asset $assetName already exists (ID $($ea.id)). Re-uploading..."
+            Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/assets/$($ea.id)" -Headers $headers -Method Delete
+            break
+        }
+    }
+
+    $sizeMb = [Math]::Round((Get-Item $filePath).Length / 1MB, 2)
+    Write-Output "Uploading $assetName ($sizeMb MB)..."
+
+    $fileBytes = [System.IO.File]::ReadAllBytes($filePath)
+    $uploadUrl = "$uploadUrlBase`?name=$assetName"
+
+    $uploadHeaders = @{
+        "Authorization" = "token $token"
+        "Accept" = "application/vnd.github.v3+json"
+        "User-Agent" = "ASM-Studio-Release-Agent"
+        "Content-Type" = $contentType
+    }
+
+    $uploadResult = Invoke-RestMethod -Uri $uploadUrl -Headers $uploadHeaders -Method Post -Body $fileBytes
+    Write-Output "SUCCESS: $assetName uploaded! (Download: $($uploadResult.browser_download_url))"
 }
 
-Write-Output "Uploading $assetName ($([Math]::Round((Get-Item $zipPath).Length / 1MB, 2)) MB)..."
-
-$fileBytes = [System.IO.File]::ReadAllBytes($zipPath)
-$uploadUrl = "$uploadUrlBase`?name=$assetName"
-
-$uploadHeaders = @{
-    "Authorization" = "token $token"
-    "Accept" = "application/vnd.github.v3+json"
-    "User-Agent" = "ASM-Studio-Release-Agent"
-    "Content-Type" = "application/zip"
-}
-
-$uploadResult = Invoke-RestMethod -Uri $uploadUrl -Headers $uploadHeaders -Method Post -Body $fileBytes
-Write-Output "SUCCESS: Asset uploaded! Asset ID: $($uploadResult.id), Download URL: $($uploadResult.browser_download_url)"
-Write-Output "Release URL: $($release.html_url)"
+Write-Output ""
+Write-Output "🎉 ALL RELEASE ASSETS UPLOADED SUCCESSFULLY!"
+Write-Output "Release Page: $($release.html_url)"
