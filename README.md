@@ -16,7 +16,7 @@
 
 ### 🌐 [**Launch Web App in Browser (Zero Install)**](https://mmht2000.github.io/ASM-Studio-2026/)
 
-[🐧 Ubuntu/Debian (.deb)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/asm-studio-2026_1.0.0_amd64.deb) • [🐧 Linux Portable (.tar.gz)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz) • [💻 Windows (.zip)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Windows-x64.zip) • [Installation Guide](#-installation--downloads) • [Features](#key-features)
+[🐧 Ubuntu/Debian (.deb)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.1.0/asm-studio-2026_1.1.0_amd64.deb) • [🐧 Linux Portable (.tar.gz)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.1.0/ASM-Studio-2026-v1.1.0-Linux-x64.tar.gz) • [💻 Windows (.zip)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.1.0/ASM-Studio-2026-v1.1.0-Windows-x64.zip) • [Installation Guide](#-installation--downloads) • [Features](#key-features)
 
 </div>
 
@@ -59,11 +59,11 @@ Official pre-built desktop releases are also published on the **[GitHub Releases
 Recommended for Ubuntu 20.04, 22.04, 24.04, Debian 11/12, and Linux Mint:
 ```bash
 # 1. Download the latest .deb package
-wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/asm-studio-2026_1.0.0_amd64.deb
+wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.1.0/asm-studio-2026_1.1.0_amd64.deb
 
 # 2. Install using apt (resolves system dependencies automatically)
 sudo apt update
-sudo apt install ./asm-studio-2026_1.0.0_amd64.deb
+sudo apt install ./asm-studio-2026_1.1.0_amd64.deb
 
 # 3. Launch from Ubuntu application launcher or terminal
 asm-studio
@@ -73,9 +73,9 @@ asm-studio
 Works on **any** 64-bit Linux distribution (Fedora, Arch, openSUSE, Manjaro) without requiring root/sudo privileges:
 ```bash
 # 1. Download and extract
-wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz
-tar -xzf ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz
-cd ASM-Studio-2026-v1.0.0-Linux-x64
+wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.1.0/ASM-Studio-2026-v1.1.0-Linux-x64.tar.gz
+tar -xzf ASM-Studio-2026-v1.1.0-Linux-x64.tar.gz
+cd ASM-Studio-2026-v1.1.0-Linux-x64
 
 # 2. Run directly
 ./asm-studio
@@ -86,7 +86,7 @@ chmod +x install.sh
 ```
 
 ### 💻 Windows 10 & 11 (`.zip`)
-1. Download **[ASM-Studio-2026-v1.0.0-Windows-x64.zip](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Windows-x64.zip)**.
+1. Download **[ASM-Studio-2026-v1.1.0-Windows-x64.zip](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.1.0/ASM-Studio-2026-v1.1.0-Windows-x64.zip)**.
 2. Extract the archive anywhere on your disk.
 3. Double-click `ASMStudio.exe` to run immediately (offline, zero dependencies).
 

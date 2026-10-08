@@ -1,4 +1,11 @@
+param (
+    [string]$TagName = "v1.1.0"
+)
+
 $ErrorActionPreference = "Stop"
+
+# Extract numeric version
+$version = $TagName.TrimStart('v')
 
 # 1. Fetch credentials
 $inputData = "protocol=https`nhost=github.com`n`n"
@@ -34,23 +41,22 @@ $headers = @{
 }
 
 $repo = "MMHT2000/ASM-Studio-2026"
-$tagName = "v1.0.0"
 
-Write-Output "Checking existing release for $tagName..."
+Write-Output "Checking existing release for $TagName..."
 $release = $null
 try {
-    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/tags/$tagName" -Headers $headers -Method Get
-    Write-Output "Release $tagName found (ID: $($release.id))."
+    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/tags/$TagName" -Headers $headers -Method Get
+    Write-Output "Release $TagName found (ID: $($release.id))."
 } catch {
-    Write-Output "Release $tagName does not exist yet."
+    Write-Output "Release $TagName does not exist yet. Will create."
 }
 
 $releaseBody = @"
-# ASM Studio 2026 (v1.0.0) — Multi-Platform Production Release 🚀
+# ASM Studio 2026 ($TagName) — Multi-Platform Production Release 🚀
 
-Welcome to the official **v1.0.0** release of **ASM Studio 2026** — a next-generation, high-performance Intel 8086 Assembly IDE, visual hardware emulator, time-travel debugger, and AI-powered assembly tutor.
+Welcome to **$TagName** of **ASM Studio 2026** — the high-performance Intel 8086 Assembly IDE, hardware emulator, time-travel debugger, and AI-powered assembly tutor.
 
-Now featuring **native support for both Windows and Ubuntu/Linux**! 🐧💻
+Now featuring **native binaries for Windows, Ubuntu/Debian, Universal Linux, and zero-install Web deployment**! 🐧💻🌐
 
 ---
 
@@ -58,40 +64,61 @@ Now featuring **native support for both Windows and Ubuntu/Linux**! 🐧💻
 
 | Platform | Package Format | Download Link | Size | Instructions |
 |---|---|---|---|---|
-| **Ubuntu / Debian** | `.deb` Native Package | **[asm-studio-2026_1.0.0_amd64.deb](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/asm-studio-2026_1.0.0_amd64.deb)** | ~109 MB | `sudo dpkg -i asm-studio-2026_1.0.0_amd64.deb` |
-| **Linux (Universal)** | Portable `.tar.gz` | **[ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz)** | ~108 MB | Extract & run `./asm-studio` or `./install.sh` |
-| **Windows** | Standalone `.zip` | **[ASM-Studio-2026-v1.0.0-Windows-x64.zip](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Windows-x64.zip)** | ~48.8 MB | Extract and launch `ASMStudio.exe` |
+| **Ubuntu / Debian** | `.deb` Native Package | **[asm-studio-2026_${version}_amd64.deb](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/$TagName/asm-studio-2026_${version}_amd64.deb)** | ~109 MB | `sudo apt install ./asm-studio-2026_${version}_amd64.deb` |
+| **Linux (Universal)** | Portable `.tar.gz` | **[ASM-Studio-2026-${TagName}-Linux-x64.tar.gz](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/$TagName/ASM-Studio-2026-${TagName}-Linux-x64.tar.gz)** | ~108 MB | Extract & run `./asm-studio` or `./install.sh` |
+| **Windows 10 / 11** | Standalone `.zip` | **[ASM-Studio-2026-${TagName}-Windows-x64.zip](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/$TagName/ASM-Studio-2026-${TagName}-Windows-x64.zip)** | ~49 MB | Extract and launch `ASMStudio.exe` |
+| **Web (Instant Access)** | Browser SPA | **[https://mmht2000.github.io/ASM-Studio-2026/](https://mmht2000.github.io/ASM-Studio-2026/)** | 0 MB | Zero install, works in all browsers |
+
+---
+
+### 🌟 What's New in $TagName:
+
+* 🐧 **Native Ubuntu / Debian Package (`.deb`)**:
+  * One-click installation via `sudo apt install ./asm-studio-2026_${version}_amd64.deb`.
+  * Installs desktop icon to `/usr/share/icons/hicolor/...` and registers `asm-studio` command in PATH.
+* 📦 **Universal Linux Portable Bundle (`.tar.gz`)**:
+  * Runs on Fedora, Arch Linux, Linux Mint, Debian, and openSUSE without root privileges.
+  * Includes `install.sh` user-level desktop installer.
+* 🎨 **Reorganized Sleek Ribbon**:
+  * Replaced bloated buttons with modern segmented button clusters (VS Code / JetBrains style).
+  * Grouped Assemble, Playback with clock picker, and Step Back/Forward controls.
+* 🖥️ **Dedicated Bottom Status Bar (`StatusBar.tsx`)**:
+  * Live status indicator, syntax error counters, CPU registers (`IP`, `SP`, `Steps`), architecture mode, and active AI indicator.
+* 🌐 **Live GitHub Pages Web Deployment**:
+  * Accessible globally for students, educators, and schools at `https://mmht2000.github.io/ASM-Studio-2026/`.
+* ☕ **Community Funding**:
+  * Added Buy Me a Coffee integration in toolbar, settings, and documentation.
 
 ---
 
 ### 🐧 Ubuntu & Linux Installation Guide
 
 #### Option A: Native Debian/Ubuntu Package (`.deb`)
-Recommended for Ubuntu 20.04, 22.04, 24.04, and Debian-based systems.
+Recommended for Ubuntu 20.04, 22.04, 24.04, and Debian-based systems:
 ```bash
 # 1. Download the package
-wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/asm-studio-2026_1.0.0_amd64.deb
+wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/$TagName/asm-studio-2026_${version}_amd64.deb
 
-# 2. Install using apt (automatically resolves any dependencies)
+# 2. Install using apt (resolves any dependencies automatically)
 sudo apt update
-sudo apt install ./asm-studio-2026_1.0.0_amd64.deb
+sudo apt install ./asm-studio-2026_${version}_amd64.deb
 
 # 3. Launch from Ubuntu application launcher or terminal
 asm-studio
 ```
 
 #### Option B: Portable Tarball (`.tar.gz`)
-Works on any x86_64 Linux distribution (Fedora, Arch, Linux Mint, openSUSE) with zero root privileges:
+Works on any x86_64 Linux distribution:
 ```bash
 # 1. Download and extract
-wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz
-tar -xzf ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz
-cd ASM-Studio-2026-v1.0.0-Linux-x64
+wget https://github.com/MMHT2000/ASM-Studio-2026/releases/download/$TagName/ASM-Studio-2026-${TagName}-Linux-x64.tar.gz
+tar -xzf ASM-Studio-2026-${TagName}-Linux-x64.tar.gz
+cd ASM-Studio-2026-${TagName}-Linux-x64
 
 # 2. Run directly
 ./asm-studio
 
-# 3. Optional: Install to your desktop application menu
+# 3. (Optional) Install to desktop menu
 chmod +x install.sh
 ./install.sh
 ```
@@ -99,50 +126,35 @@ chmod +x install.sh
 ---
 
 ### 💻 Windows Installation Guide
-1. Download `ASM-Studio-2026-v1.0.0-Windows-x64.zip`.
-2. Extract the archive anywhere on your machine.
+1. Download `ASM-Studio-2026-${TagName}-Windows-x64.zip`.
+2. Extract the archive anywhere on your disk.
 3. Double-click `ASMStudio.exe` — runs 100% offline with zero dependencies or installers.
 
 ---
 
-### ✨ Highlights & Key Features
-
-* 💻 **Complete Intel 8086 Architecture Simulator**:
-  * Real-mode 1MB segmented memory (`CS`, `DS`, `SS`, `ES`).
-  * 16-bit General Purpose Registers (`AX`, `BX`, `CX`, `DX` with high/low 8-bit split access).
-  * Pointer & Index Registers (`SP`, `BP`, `SI`, `DI`, `IP`).
-  * Real-time Flags register display (`CF`, `PF`, `AF`, `ZF`, `SF`, `TF`, `IF`, `DF`, `OF`).
-* ⚡ **Full Instruction Set Support**:
-  * Data movement (`MOV`, `XCHG`, `PUSH`, `POP`, `LEA`, `LDS`, `LES`).
-  * Arithmetic (`ADD`, `SUB`, `ADC`, `SBB`, `INC`, `DEC`, `MUL`, `IMUL`, `DIV`, `IDIV`, `NEG`, `DAA`, `AAA`, `DAS`, `AAS`).
-  * Logic & Bitwise (`AND`, `OR`, `XOR`, `NOT`, `TEST`, `SHL`, `SHR`, `SAL`, `SAR`, `ROL`, `ROR`, `RCL`, `RCR`).
-  * Control flow & Jumps (`JMP`, `JZ`/`JE`, `JNZ`/`JNE`, `JC`, `JNC`, `JS`, `JNS`, `JO`, `JNO`, `JA`, `JAE`, `JB`, `JBE`, `LOOP`, `CALL`, `RET`, `INT`, `IRET`).
-  * Strings & Memory (`MOVSB`, `MOVSW`, `CMPSB`, `CMPSW`, `SCASB`, `SCASW`, `LODSB`, `LODSW`, `STOSB`, `STOSW` with `REP`/`REPE`/`REPNE`).
-* 🖥️ **Interactive Hardware Devices**:
-  * **VGA Text Screen / Video Display**: Real-time rendering of INT 10h BIOS display services and INT 21h DOS output routines.
-  * **Visual Memory Grid**: Real-time hex dump and ASCII inspection with search, address navigation, and live byte highlighting.
-  * **Interactive Stack Visualizer**: Dynamic visual representation of `SS:SP` push/pop frames and function call records.
-  * **Traffic Lights, Stepper Motor, & 7-Segment Displays**: Real-time virtual hardware bus peripherals.
-* 🤖 **Multi-Provider AI Assembly Assistant**:
-  * Live code review, automatic bug detection, step-by-step logic explanation, and performance optimization.
-  * Configurable LLM Providers: **Google Gemini**, **OpenAI**, and **Anthropic Claude**.
-  * Fully customizable model names, system prompts, temperatures, and custom base URLs.
-* 🎨 **Deep Customization & Theming**:
-  * Theme switcher (Cyber Dark, Slate Navy, Matrix Green, Classic Light, High Contrast).
-  * Custom editor backgrounds, syntax colors, font families, and sizes.
-  * Adjustable step-by-step emulation speeds (1 Hz to Max Speed).
-
----
-
 ### ☕ Support the Project
-If you enjoy using **ASM Studio 2026** for your university studies, teaching, or assembly projects, you can support continued development here:
+If you enjoy using **ASM Studio 2026** for your coursework, university studies, or retro computing, consider supporting development:
 👉 **[buymeacoffee.com/MMHT2000](https://buymeacoffee.com/MMHT2000)**
 "@
 
-if ($release) {
+if (-not $release) {
+    $createPayload = @{
+        tag_name = $TagName
+        target_commitish = "main"
+        name = "ASM Studio 2026 $TagName (Windows & Ubuntu/Linux)"
+        body = $releaseBody
+        draft = $false
+        prerelease = $false
+    } | ConvertTo-Json -Depth 5
+
+    $jsonBytes = [System.Text.Encoding]::UTF8.GetBytes($createPayload)
+    Write-Output "Creating release $TagName via GitHub API..."
+    $release = Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases" -Headers $headers -Method Post -Body $jsonBytes -ContentType "application/json; charset=utf-8"
+    Write-Output "Created release successfully: $($release.html_url)"
+} else {
     Write-Output "Updating release notes for ID $($release.id)..."
     $updatePayload = @{
-        name = "ASM Studio 2026 v1.0.0 (Windows & Ubuntu/Linux)"
+        name = "ASM Studio 2026 $TagName (Windows & Ubuntu/Linux)"
         body = $releaseBody
     } | ConvertTo-Json -Depth 5
     $updateBytes = [System.Text.Encoding]::UTF8.GetBytes($updatePayload)
@@ -156,18 +168,18 @@ $uploadUrlBase = $uploadUrlTemplate.Split('{')[0]
 
 $assetsToUpload = @(
     @{
-        Path = "d:\Emu8086\asm-studio-2026_1.0.0_amd64.deb"
-        Name = "asm-studio-2026_1.0.0_amd64.deb"
+        Path = "d:\Emu8086\asm-studio-2026_${version}_amd64.deb"
+        Name = "asm-studio-2026_${version}_amd64.deb"
         ContentType = "application/vnd.debian.binary-package"
     },
     @{
-        Path = "d:\Emu8086\ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz"
-        Name = "ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz"
+        Path = "d:\Emu8086\ASM-Studio-2026-${TagName}-Linux-x64.tar.gz"
+        Name = "ASM-Studio-2026-${TagName}-Linux-x64.tar.gz"
         ContentType = "application/gzip"
     },
     @{
-        Path = "d:\Emu8086\ASM-Studio-2026-v1.0.0-Windows-x64.zip"
-        Name = "ASM-Studio-2026-v1.0.0-Windows-x64.zip"
+        Path = "d:\Emu8086\ASM-Studio-2026-${TagName}-Windows-x64.zip"
+        Name = "ASM-Studio-2026-${TagName}-Windows-x64.zip"
         ContentType = "application/zip"
     }
 )
@@ -185,7 +197,6 @@ foreach ($asset in $assetsToUpload) {
         continue
     }
 
-    $alreadyUploaded = $false
     foreach ($ea in $existingAssets) {
         if ($ea.name -eq $assetName) {
             Write-Output "Asset $assetName already exists (ID $($ea.id)). Re-uploading..."
@@ -212,5 +223,5 @@ foreach ($asset in $assetsToUpload) {
 }
 
 Write-Output ""
-Write-Output "🎉 ALL RELEASE ASSETS UPLOADED SUCCESSFULLY!"
+Write-Output "🎉 ALL RELEASE ASSETS UPLOADED SUCCESSFULLY FOR $TagName!"
 Write-Output "Release Page: $($release.html_url)"

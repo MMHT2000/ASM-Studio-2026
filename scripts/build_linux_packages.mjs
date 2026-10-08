@@ -6,7 +6,7 @@ const ROOT_DIR = path.resolve('d:/Emu8086');
 const STAGING_DIR = path.join(ROOT_DIR, 'build-linux-staging');
 const DIST_WEB = path.join(ROOT_DIR, 'asm-studio', 'dist');
 const OUTPUT_DIR = path.join(ROOT_DIR, 'release-linux');
-const VERSION = '1.0.0';
+const VERSION = process.env.APP_VERSION || '1.1.0';
 const PKG_NAME = 'asm-studio-2026';
 
 if (!fs.existsSync(OUTPUT_DIR)) {
