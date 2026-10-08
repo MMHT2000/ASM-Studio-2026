@@ -31,3 +31,4 @@ git push origin gh-pages --force
 Set-Location $root
 Remove-Item $tempGit -Recurse -Force
 Write-Output "SUCCESS: gh-pages branch published to GitHub!"
+

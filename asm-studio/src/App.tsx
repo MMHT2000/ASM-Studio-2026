@@ -12,6 +12,7 @@ import { decodeSourceFromHash } from './lib/fileUtils';
 import VirtualDevicesPanel from './components/Devices/VirtualDevicesPanel';
 import AiTutorPanel from './components/AI/AiTutorPanel';
 import SettingsModal from './components/Settings/SettingsModal';
+import StatusBar from './components/Toolbar/StatusBar';
 
 type RightTab = 'registers' | 'memory' | 'devices';
 type BottomTab = 'console' | 'errors' | 'ai';
@@ -107,6 +108,9 @@ export default function App() {
           )}
         </div>
       </div>
+
+      {/* Bottom Status Bar */}
+      <StatusBar />
     </div>
   );
 }
