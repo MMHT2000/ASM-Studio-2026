@@ -8,4 +8,3 @@ export default defineConfig({
     format: 'es',
   },
 })
-

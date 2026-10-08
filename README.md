@@ -4,14 +4,17 @@
 
 # ASM Studio 2026 — Intel 8086 Assembly IDE & Teaching Suite
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-GitHub%20Pages-brightgreen?style=flat-square&logo=github)](https://mmht2000.github.io/ASM-Studio-2026/)
 [![Release](https://img.shields.io/github/v/release/MMHT2000/ASM-Studio-2026?style=flat-square&color=cba6f7)](https://github.com/MMHT2000/ASM-Studio-2026/releases)
-[![Platform](https://img.shields.io/badge/platform-Ubuntu%20%2F%20Linux%20%7C%20Windows%20x64-blue?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026/releases)
+[![Platform](https://img.shields.io/badge/platform-Web%20%7C%20Ubuntu%20%2F%20Linux%20%7C%20Windows%20x64-blue?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026/releases)
 [![Tests](https://img.shields.io/badge/tests-28%2F28%20passing%20(100%25)-green?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026)
 [![Buy Me A Coffee](https://img.shields.io/badge/Buy%20Me%20A%20Coffee-MMHT2000-FFDD00?style=flat-square&logo=buy-me-a-coffee&logoColor=black)](https://buymeacoffee.com/MMHT2000)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
 [![Built With](https://img.shields.io/badge/built%20with-React%2018%20%2B%20Electron%20%2B%20.NET%2010-89b4fa?style=flat-square)](https://github.com/MMHT2000/ASM-Studio-2026)
 
 **A modern, lightning-fast, and pedagogical Intel 8086 Microprocessor IDE designed to replace legacy 16-bit DOS-box emulators for university students, educators, and systems engineers.**
+
+### 🌐 [**Launch Web App in Browser (Zero Install)**](https://mmht2000.github.io/ASM-Studio-2026/)
 
 [🐧 Ubuntu/Debian (.deb)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/asm-studio-2026_1.0.0_amd64.deb) • [🐧 Linux Portable (.tar.gz)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Linux-x64.tar.gz) • [💻 Windows (.zip)](https://github.com/MMHT2000/ASM-Studio-2026/releases/download/v1.0.0/ASM-Studio-2026-v1.0.0-Windows-x64.zip) • [Installation Guide](#-installation--downloads) • [Features](#key-features)
 
@@ -41,7 +44,16 @@
 
 ## 📦 Installation & Downloads
 
-Official pre-built releases are published on the **[GitHub Releases Page](https://github.com/MMHT2000/ASM-Studio-2026/releases)**.
+### 🌐 Online Web Application (Instant Access)
+No setup, downloads, or installation required. Works on any operating system, Chromebook, tablet, or browser:
+👉 **[https://mmht2000.github.io/ASM-Studio-2026/](https://mmht2000.github.io/ASM-Studio-2026/)**
+* 100% Client-side execution (offline capable after first load)
+* Monaco assembly editor, full 8086 CPU simulator, and hardware peripherals
+* URL code sharing to share programs with students and teachers in one click
+
+---
+
+Official pre-built desktop releases are also published on the **[GitHub Releases Page](https://github.com/MMHT2000/ASM-Studio-2026/releases)**.
 
 ### 🐧 Ubuntu & Debian Systems (`.deb`)
 Recommended for Ubuntu 20.04, 22.04, 24.04, Debian 11/12, and Linux Mint:
