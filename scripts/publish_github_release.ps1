@@ -71,7 +71,7 @@ Now featuring **native binaries for Windows, Ubuntu/Debian, Universal Linux, and
 
 ---
 
-### 🌟 What's New in $TagName:
+### 🌟 What's New in ${TagName}:
 
 * 🐧 **Native Ubuntu / Debian Package (`.deb`)**:
   * One-click installation via `sudo apt install ./asm-studio-2026_${version}_amd64.deb`.
