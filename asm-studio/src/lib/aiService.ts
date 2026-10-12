@@ -11,11 +11,11 @@ export interface AiContext {
 export const SYSTEM_INSTRUCTION = `You are the Intel 8086 Assembly Tutor inside ASM Studio, an interactive educational 8086 IDE.
 Your students are computer science undergraduates learning 16-bit x86 architecture.
 Rules for your answers:
-1. Be concise, clear, and pedagogical. Avoid unnecessary fluff.
+1. Be clear, thorough, and pedagogical. Always explain the ENTIRE program from start to finish — never stop halfway or truncate your explanation.
 2. When explaining errors or crashes, pinpoint the exact instruction, register, or addressing mode.
 3. Explain real-mode segmentation (DS:offset, SS:SP) and status flags (CF, ZF, SF, OF, AF, PF) whenever relevant.
 4. Format assembly code nicely in markdown code blocks with comments.
-5. If suggesting fixes, provide the corrected assembly snippet ready to paste.`;
+5. If suggesting fixes, provide the complete corrected assembly snippet ready to paste.`;
 
 export function formatAiContextPrompt(prompt: string, context: AiContext): string {
   let contextInfo = `--- CURRENT 8086 PROGRAM SOURCE ---\n\`\`\`asm\n${context.source}\n\`\`\`\n\n`;
@@ -67,8 +67,7 @@ export async function askAi(prompt: string, context: AiContext): Promise<string>
 /** Google Gemini API call with automatic model cascade */
 async function askGeminiInternal(prompt: string, context: AiContext, apiKey: string, preferredModel: string): Promise<string> {
   const candidateModels = Array.from(new Set([
-    preferredModel?.trim() || 'gemini-3.8-flash',
-    'gemini-3.8-flash',
+    preferredModel?.trim() || 'gemini-2.5-flash',
     'gemini-2.5-flash',
     'gemini-2.0-flash',
     'gemini-1.5-flash'
@@ -96,7 +95,7 @@ async function askGeminiInternal(prompt: string, context: AiContext, apiKey: str
           ],
           generationConfig: {
             temperature: 0.4,
-            maxOutputTokens: 1200,
+            maxOutputTokens: 8192,
           }
         })
       });
@@ -122,8 +121,14 @@ async function askGeminiInternal(prompt: string, context: AiContext, apiKey: str
       }
 
       const data = await response.json();
-      const reply = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-      if (reply) return reply;
+      const parts = data?.candidates?.[0]?.content?.parts;
+      if (Array.isArray(parts)) {
+        const reply = parts
+          .filter((p: any) => !p.thought && typeof p.text === 'string')
+          .map((p: any) => p.text)
+          .join('');
+        if (reply) return reply;
+      }
     } catch (err: any) {
       lastError = err.message || String(err);
       continue;
@@ -149,9 +154,9 @@ async function askOpenAiInternal(prompt: string, context: AiContext, apiKey: str
   if (!isReasoningModel) {
     payload.messages.push({ role: 'user', content: fullUserPrompt });
     payload.temperature = 0.4;
-    payload.max_tokens = 1200;
+    payload.max_tokens = 8192;
   } else {
-    payload.max_completion_tokens = 1200;
+    payload.max_completion_tokens = 16384;
   }
 
   const endpointBase = (baseUrl?.trim() || 'https://api.openai.com/v1').replace(/\/+$/, '');
@@ -204,7 +209,7 @@ async function askAnthropicInternal(prompt: string, context: AiContext, apiKey: 
         messages: [
           { role: 'user', content: fullUserPrompt }
         ],
-        max_tokens: 1200,
+        max_tokens: 8192,
         temperature: 0.4,
       }),
     });
@@ -219,8 +224,14 @@ async function askAnthropicInternal(prompt: string, context: AiContext, apiKey: 
     }
 
     const data = await response.json();
-    const text = data?.content?.[0]?.text;
-    if (text) return text;
+    const contentBlocks = data?.content;
+    if (Array.isArray(contentBlocks)) {
+      const text = contentBlocks
+        .filter((b: any) => b.type === 'text' && typeof b.text === 'string')
+        .map((b: any) => b.text)
+        .join('');
+      if (text) return text;
+    }
     return `⚠️ Anthropic returned an empty response.`;
   } catch (err: any) {
     return `⚠️ **Anthropic Request Failed:** ${err.message || String(err)}\n\n${generateOfflineAnalysis(prompt, context, 'anthropic')}`;
