@@ -23,6 +23,12 @@ export default function App() {
   const asmErrors = useAsmErrors();
   const setSource = useEmulatorStore(s => s.setSource);
   const assemble  = useEmulatorStore(s => s.assemble);
+  const emuStatus = useEmulatorStore(s => s.status);
+
+  // Show the console whenever the program is waiting for keyboard input
+  useEffect(() => {
+    if (emuStatus === 'input') setBottomTab('console');
+  }, [emuStatus]);
 
   // Check URL hash for shared code or auto-assemble on start
   useEffect(() => {

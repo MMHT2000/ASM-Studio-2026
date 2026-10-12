@@ -3,7 +3,7 @@ import { Emulator, SAMPLE_PROGRAM } from '../lib/emulator';
 import type { AsmError, CpuState, Program, StepResult } from '../lib/emulator';
 import { useSettingsStore } from './settingsStore';
 
-type EmulatorStatus = 'idle' | 'running' | 'animating' | 'paused' | 'halted' | 'error';
+type EmulatorStatus = 'idle' | 'running' | 'animating' | 'paused' | 'halted' | 'error' | 'input';
 
 export interface HistoryEntry {
   cpu: CpuState;
@@ -42,6 +42,9 @@ interface EmulatorStore {
   animSpeedMs: number;
   setAnimSpeed: (ms: number) => void;
 
+  /** When status === 'input': single keystroke (AH=01h/INT 16h) or a whole line (AH=0Ah). */
+  inputMode: 'char' | 'line' | null;
+
   // Actions
   assemble: () => void;
   step: () => void;
@@ -53,18 +56,28 @@ interface EmulatorStore {
   reset: () => void;
   toggleBreakpoint: (instrIdx: number) => void;
   setInputBuffer: (s: string) => void;
+  /** Feed keystrokes to a program that is waiting for input and resume it. Enter = '\r'. */
+  provideInput: (text: string) => void;
   setMemoryByte: (addr: number, val: number) => void;
 }
 
 // Single Emulator instance shared across the store
 const emu = new Emulator();
 let animTimer: ReturnType<typeof setInterval> | null = null;
+/** How execution was driven when it blocked on input, so we can resume the same way. */
+let resumeMode: 'run' | 'animate' | 'step' = 'step';
 
 function clearAnimTimer() {
   if (animTimer !== null) {
     clearInterval(animTimer);
     animTimer = null;
   }
+}
+
+function inputPrompt(mode: 'char' | 'line', line: number): string {
+  return mode === 'char'
+    ? `⌨ Waiting for a key press (line ${line})…`
+    : `⌨ Waiting for input — type and press Enter (line ${line})…`;
 }
 
 function snapshot(e: Emulator): CpuState {
@@ -98,6 +111,7 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
 
   history: [],
   canStepBack: false,
+  inputMode: null,
   animSpeedMs: 100, // default 100ms per step (10 Hz)
   setAnimSpeed: (ms: number) => {
     set({ animSpeedMs: ms });
@@ -116,6 +130,7 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
     set({
       history: [],
       canStepBack: false,
+      inputMode: null,
       program: prog,
       asmErrors: errors,
       cpuSnapshot: snapshot(emu),
@@ -144,8 +159,23 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
     const maxHist = useSettingsStore.getState?.().historySize || 150;
     const nextHistory = [...get().history, historyEntry].slice(-maxHist);
 
+    const wasAnimating = get().status === 'animating';
     const result: StepResult = emu.step();
     const line = emu.currentLine;
+
+    if (result.type === 'input') {
+      // CPU state is unchanged — don't record a history entry for the blocked attempt.
+      clearAnimTimer();
+      resumeMode = wasAnimating ? 'animate' : 'step';
+      set({
+        cpuSnapshot: snapshot(emu),
+        status: 'input',
+        inputMode: result.mode,
+        statusMessage: inputPrompt(result.mode, result.line),
+        currentLine: line,
+      });
+      return;
+    }
 
     if (result.type === 'halt') {
       clearAnimTimer();
@@ -201,6 +231,7 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
       canStepBack: newHistory.length > 0,
       cpuSnapshot: snapshot(emu),
       currentLine: prev.currentLine,
+      inputMode: null,
       status: 'paused',
       statusMessage: `Stepped back to step ${prev.cpu.stepCount}`,
     });
@@ -251,6 +282,15 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
           statusMessage: `Breakpoint hit`,
           currentLine: line,
         });
+      } else if (result.type === 'input') {
+        resumeMode = 'run';
+        set({
+          cpuSnapshot: snapshot(emu),
+          status: 'input',
+          inputMode: result.mode,
+          statusMessage: inputPrompt(result.mode, result.line),
+          currentLine: line,
+        });
       }
     }, 10);
   },
@@ -264,7 +304,7 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
       get().reset();
     }
     clearAnimTimer();
-    set({ status: 'animating', statusMessage: 'Animating execution…' });
+    set({ status: 'animating', inputMode: null, statusMessage: 'Animating execution…' });
 
     const delay = get().animSpeedMs;
     animTimer = setInterval(() => {
@@ -279,6 +319,8 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
 
   pause: () => {
     clearAnimTimer();
+    // While waiting for input the CPU is already paused; keep the input prompt.
+    if (get().status === 'input') return;
     set({
       status: 'paused',
       statusMessage: 'Paused. Use Step or Run.',
@@ -291,6 +333,7 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
     set({
       cpuSnapshot: snapshot(emu),
       status: 'halted',
+      inputMode: null,
       statusMessage: 'Stopped by user.',
       currentLine: -1,
     });
@@ -302,6 +345,7 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
     set({
       history: [],
       canStepBack: false,
+      inputMode: null,
       cpuSnapshot: snapshot(emu),
       status: 'paused',
       statusMessage: 'Reset. Press ▶ Animate, ⚡ Fast, or ⏭ Step.',
@@ -316,6 +360,17 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
 
   setInputBuffer: (s: string) => {
     emu.cpu.inputBuffer = s;
+  },
+
+  provideInput: (text: string) => {
+    if (get().status !== 'input' || emu.cpu.halted) return;
+    emu.cpu.inputBuffer += text;
+    set({ inputMode: null, status: 'paused' });
+    switch (resumeMode) {
+      case 'run':     get().run(); break;
+      case 'animate': get().startAnimatedRun(); break;
+      default:        get().step(); break;   // re-executes the INT, consuming the input
+    }
   },
 
   setMemoryByte: (addr: number, val: number) => {

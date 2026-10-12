@@ -34,6 +34,7 @@ export default function StatusBar() {
             status === 'error' ? 'text-editor-red font-medium' :
             status === 'halted' ? 'text-editor-green' :
             status === 'running' || status === 'animating' ? 'text-editor-cyan' :
+            status === 'input' ? 'text-editor-amber font-medium animate-pulse' :
             'text-editor-text'
           }`}>
             {statusMessage || 'Ready'}

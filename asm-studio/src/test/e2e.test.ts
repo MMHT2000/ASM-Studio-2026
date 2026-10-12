@@ -332,6 +332,78 @@ test('DOS INT 21h Services (AH=01h read, AH=02h char, AH=09h string, AH=4Ch exit
   assertEq(fullOutput, 'XASM2026', 'Console output matches');
 });
 
+test('INT 21h / AH=01h blocks until a key is supplied, then echoes it', () => {
+  const emu = new Emulator();
+  emu.load(`
+    .code
+    main proc
+      MOV AH, 01h
+      INT 21h
+      MOV BL, AL
+      MOV AH, 4Ch
+      INT 21h
+    main endp
+  `);
+  const first = emu.run(100);
+  assertEq(first.type, 'input', 'Must pause for input instead of running to completion');
+  assert(!emu.cpu.halted, 'CPU must not halt while waiting');
+  // Re-running without input must keep waiting, not skip the read
+  assertEq(emu.run(100).type, 'input', 'Still waiting with an empty buffer');
+
+  emu.cpu.inputBuffer += 'Q';
+  const second = emu.run(100);
+  assertEq(second.type, 'halt', 'Resumes and finishes after input');
+  assertEq(emu.cpu.regs.BX & 0xFF, 'Q'.charCodeAt(0), 'AL received the typed key');
+  assertEq(emu.cpu.output.join(''), 'Q', 'AH=01h echoes the key');
+});
+
+test('INT 21h / AH=0Ah buffered input waits for Enter and fills the DOS buffer', () => {
+  const emu = new Emulator();
+  emu.load(`
+    .data
+    buf DB 6, ?, 6 DUP(0)
+    .code
+    main proc
+      MOV AX, @DATA
+      MOV DS, AX
+      LEA DX, buf
+      MOV AH, 0Ah
+      INT 21h
+      MOV AH, 4Ch
+      INT 21h
+    main endp
+  `);
+  assertEq(emu.run(100).type, 'input', 'Waits for a line');
+  emu.cpu.inputBuffer += 'HEL';
+  assertEq(emu.run(100).type, 'input', 'Partial line without Enter keeps waiting');
+  emu.cpu.inputBuffer += 'LO WORLD\r';   // longer than the 5-char capacity
+  assertEq(emu.run(100).type, 'halt', 'Finishes after Enter');
+
+  const base = emu.program!.vars.get('BUF')!.address;
+  const count = emu.cpu.mem[base + 1];
+  assertEq(count, 5, 'Count byte is truncated to max-1');
+  const text = String.fromCharCode(...emu.cpu.mem.slice(base + 2, base + 2 + count));
+  assertEq(text, 'HELLO', 'Typed characters stored after the count byte');
+  assertEq(emu.cpu.mem[base + 2 + count], 0x0D, 'Line terminated with CR');
+});
+
+test('INT 16h / AH=00h waits for a keystroke without echo', () => {
+  const emu = new Emulator();
+  emu.load(`
+    .code
+    main proc
+      MOV AH, 00h
+      INT 16h
+      MOV AH, 4Ch
+      INT 21h
+    main endp
+  `);
+  assertEq(emu.run(100).type, 'input', 'Waits for keystroke');
+  emu.cpu.inputBuffer += 'z';
+  assertEq(emu.run(100).type, 'halt', 'Finishes after key');
+  assertEq(emu.cpu.output.join(''), '', 'INT 16h does not echo');
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. Curated Sample Programs
 // ─────────────────────────────────────────────────────────────────────────────

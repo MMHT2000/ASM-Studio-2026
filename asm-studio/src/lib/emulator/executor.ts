@@ -208,16 +208,43 @@ function flagsAfterDec(flags: Flags, prev: number, result: number, size: 'byte' 
 }
 
 // ── INT 21h DOS Emulation ─────────────────────────────────────────────────────
+//
+// Keyboard input model: the UI appends keystrokes to `cpu.inputBuffer`
+// (Enter is sent as '\r', matching what DOS returns in AL). When a program
+// asks for input and the buffer can't satisfy the request, the handler
+// returns an `input` result WITHOUT advancing IP, so the same INT
+// re-executes once the user has typed something.
 
-function handleInt21(cpu: CpuState, prog: Program): StepResult | null {
+/** Append text to the console output, honouring CR/LF semantics. */
+function echo(cpu: CpuState, text: string): void {
+  if (cpu.output.length === 0) cpu.output.push('');
+  for (const ch of text) {
+    if (ch === '\n') cpu.output.push('');
+    else if (ch === '\r') continue;           // CR alone does not start a new line
+    else if (ch === '\b') cpu.output[cpu.output.length - 1] = cpu.output[cpu.output.length - 1].slice(0, -1);
+    else cpu.output[cpu.output.length - 1] += ch;
+  }
+}
+
+/** Pop one key from the input buffer, or null if none is waiting. */
+function takeKey(cpu: CpuState): number | null {
+  if (cpu.inputBuffer.length === 0) return null;
+  const code = cpu.inputBuffer.charCodeAt(0) & 0xFF;
+  cpu.inputBuffer = cpu.inputBuffer.slice(1);
+  return code;
+}
+
+function handleInt21(cpu: CpuState, prog: Program, line: number): StepResult | null {
   const ah = getReg(cpu.regs, 'AH');
 
   switch (ah) {
-    case 0x01: {
-      // Read character into AL — use input buffer or prompt
-      const ch = cpu.inputBuffer.length > 0 ? cpu.inputBuffer[0] : '\n';
-      cpu.inputBuffer = cpu.inputBuffer.slice(1);
-      setReg(cpu.regs, cpu.changedRegs, 'AL', ch.charCodeAt(0));
+    case 0x01:   // Read char with echo → AL
+    case 0x07:   // Direct char input, no echo → AL
+    case 0x08: { // Char input, no echo → AL
+      const code = takeKey(cpu);
+      if (code === null) return { type: 'input', mode: 'char', line };
+      setReg(cpu.regs, cpu.changedRegs, 'AL', code);
+      if (ah === 0x01) echo(cpu, String.fromCharCode(code));
       break;
     }
     case 0x02: {
@@ -253,7 +280,31 @@ function handleInt21(cpu: CpuState, prog: Program): StepResult | null {
       break;
     }
     case 0x0A: {
-      // Buffered keyboard input — stub
+      // Buffered keyboard input at DS:DX
+      //   [DX+0] = max chars (incl. CR)  [DX+1] = chars read (excl. CR)  [DX+2..] = data + CR
+      const crPos = cpu.inputBuffer.indexOf('\r');
+      if (crPos === -1) return { type: 'input', mode: 'line', line };
+
+      const base = getReg(cpu.regs, 'DX') & 0xFFFF;
+      const max = cpu.mem[base];
+      const room = Math.max(0, max - 1);              // leave space for the CR
+      const typed = cpu.inputBuffer.slice(0, crPos).slice(0, room);
+      cpu.inputBuffer = cpu.inputBuffer.slice(crPos + 1);
+
+      const write = (a: number, v: number) => {
+        const addr = a & 0xFFFF;
+        cpu.mem[addr] = v & 0xFF;
+        cpu.changedAddrs.add(addr);
+      };
+      write(base + 1, typed.length);
+      for (let i = 0; i < typed.length; i++) write(base + 2 + i, typed.charCodeAt(i));
+      if (max > 0) write(base + 2 + typed.length, 0x0D);
+      echo(cpu, typed);
+      break;
+    }
+    case 0x0B: {
+      // Check input status: AL = FFh if a key is waiting, else 00h (non-blocking)
+      setReg(cpu.regs, cpu.changedRegs, 'AL', cpu.inputBuffer.length > 0 ? 0xFF : 0x00);
       break;
     }
     case 0x4C: {
@@ -265,6 +316,36 @@ function handleInt21(cpu: CpuState, prog: Program): StepResult | null {
     }
     default:
       // Unknown INT 21h service — ignore silently
+      break;
+  }
+  return null;
+}
+
+// ── INT 16h BIOS Keyboard ─────────────────────────────────────────────────────
+
+function handleInt16(cpu: CpuState, line: number): StepResult | null {
+  const ah = getReg(cpu.regs, 'AH');
+  switch (ah) {
+    case 0x00:
+    case 0x10: { // Wait for keystroke → AL = ASCII, AH = scan code (not modelled → 0)
+      const code = takeKey(cpu);
+      if (code === null) return { type: 'input', mode: 'char', line };
+      setReg(cpu.regs, cpu.changedRegs, 'AL', code);
+      setReg(cpu.regs, cpu.changedRegs, 'AH', 0);
+      break;
+    }
+    case 0x01:
+    case 0x11: { // Peek keystroke: ZF=1 if none, else ZF=0 and AL = key (not removed)
+      if (cpu.inputBuffer.length === 0) {
+        cpu.flags.ZF = true;
+      } else {
+        cpu.flags.ZF = false;
+        setReg(cpu.regs, cpu.changedRegs, 'AL', cpu.inputBuffer.charCodeAt(0) & 0xFF);
+        setReg(cpu.regs, cpu.changedRegs, 'AH', 0);
+      }
+      break;
+    }
+    default:
       break;
   }
   return null;
@@ -747,9 +828,17 @@ export function step(cpu: CpuState, prog: Program): StepResult {
 
       case 'INT': {
         const intNum = readOp(cpu, op0, 'byte');
-        if (intNum === 0x21) {
-          const r = handleInt21(cpu, prog);
-          if (r) { cpu.ipIdx = nextIdx; return r; }
+        let r: StepResult | null = null;
+        if (intNum === 0x21) r = handleInt21(cpu, prog, instr.line);
+        else if (intNum === 0x16) r = handleInt16(cpu, instr.line);
+        if (r) {
+          if (r.type === 'input') {
+            // Blocked on keyboard: stay on this INT and don't count the attempt.
+            cpu.stepCount--;
+            return r;
+          }
+          cpu.ipIdx = nextIdx;
+          return r;
         }
         // Other interrupts: stub
         break;

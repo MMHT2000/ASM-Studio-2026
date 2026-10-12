@@ -98,7 +98,9 @@ export type StepResult =
   | { type: 'step' }
   | { type: 'halt';  code: number }
   | { type: 'error'; msg: string; line: number }
-  | { type: 'break'; ipIdx: number };
+  | { type: 'break'; ipIdx: number }
+  /** CPU is blocked on a keyboard read; feed `inputBuffer` and step again. */
+  | { type: 'input'; mode: 'char' | 'line'; line: number };
 
 /** Default initial CPU registers */
 export function defaultRegisters(): Registers {
