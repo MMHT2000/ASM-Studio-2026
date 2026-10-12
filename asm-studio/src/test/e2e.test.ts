@@ -404,6 +404,72 @@ test('INT 16h / AH=00h waits for a keystroke without echo', () => {
   assertEq(emu.cpu.output.join(''), '', 'INT 16h does not echo');
 });
 
+test('Emu8086 Preset matches emu8086 segments, offsets (0000h), SP (0100h), and INT 21h AL side-effects', () => {
+  const emu = new Emulator();
+  emu.load(`
+    .model small
+    .stack 100h
+    .data
+    msg1 db 'Enter first number: $'
+    msg2 db 0dh, 0ah, 'Enter second numbrt: $'
+    msg3 db 0dh, 0ah, 'Sum is: $'
+    num1 db ?
+    num2 db ?
+    sum db ?
+    .code
+    main:
+    mov ax, @data
+    mov ds, ax
+    mov ah, 09h
+    lea dx, msg1
+    int 21h
+    mov ah, 01h
+    int 21h
+    sub al, 30h
+    mov num1, al
+    mov ah, 09h
+    lea dx, msg2
+    int 21h
+    mov ah, 01h
+    int 21h
+    sub al, 30h
+    mov num2, al
+    mov al, num1
+    add al, num2
+    mov sum, al
+    mov ah, 09h
+    lea dx, msg3
+    int 21h
+    mov al, sum
+    add al, 30h
+    mov dl, al
+    mov ah, 02h
+    int 21h
+    mov ah, 4ch
+    int 21h
+  `, 'emu8086');
+
+  assertEq(emu.cpu.regs.SP, 0x0100, 'Initial SP in Emu8086 preset should be 0100h');
+  assertEq(emu.cpu.regs.IP, 0x0000, 'Initial IP in Emu8086 preset should be 0000h');
+
+  // Run up to first input prompt
+  assertEq(emu.run(100).type, 'input', 'Should pause at first INT 21h/AH=01h');
+  assertEq(emu.cpu.regs.DS, 0x0710, 'DS should be 0710h after MOV AX, @data / MOV DS, AX');
+  assertEq(emu.cpu.regs.DX, 0x0000, 'DX should be 0000h after LEA DX, msg1');
+  assertEq(emu.cpu.regs.AX & 0xFF, 0x24, 'AL should be 24h ($) after INT 21h / AH=09h');
+
+  // Supply first digit '3'
+  emu.cpu.inputBuffer += '3';
+  assertEq(emu.run(100).type, 'input', 'Should pause at second INT 21h/AH=01h');
+  assertEq(emu.cpu.regs.DX, 0x0015, 'DX should be 0015h after LEA DX, msg2');
+
+  // Supply second digit '4'
+  emu.cpu.inputBuffer += '4';
+  assertEq(emu.run(100).type, 'halt', 'Should finish after second digit');
+  assertEq(emu.cpu.regs.DX & 0xFF, '7'.charCodeAt(0), 'DL should hold ASCII 7');
+  assert(emu.cpu.output.join('\n').includes('Sum is: 7'), 'Output should contain Sum is: 7');
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // 6. Curated Sample Programs
 // ─────────────────────────────────────────────────────────────────────────────

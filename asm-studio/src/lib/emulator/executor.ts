@@ -131,11 +131,17 @@ function opEffectiveSize(op: Operand, other?: Operand): 'byte' | 'word' {
 function pushWord(cpu: CpuState, val: number): void {
   cpu.regs.SP = (cpu.regs.SP - 2) & 0xFFFF;
   cpu.changedRegs.add('SP');
-  writeMem(cpu, cpu.regs.SS * 16 + cpu.regs.SP, val, 'word');
+  const stackAddr = cpu.preset === 'emu8086'
+    ? (0xFF00 + (cpu.regs.SP & 0x00FF)) & 0xFFFF
+    : (cpu.regs.SS * 16 + cpu.regs.SP) & 0xFFFF;
+  writeMem(cpu, stackAddr, val, 'word');
 }
 
 function popWord(cpu: CpuState): number {
-  const val = readMem(cpu.mem, (cpu.regs.SS * 16 + cpu.regs.SP) & 0xFFFF, 'word');
+  const stackAddr = cpu.preset === 'emu8086'
+    ? (0xFF00 + (cpu.regs.SP & 0x00FF)) & 0xFFFF
+    : (cpu.regs.SS * 16 + cpu.regs.SP) & 0xFFFF;
+  const val = readMem(cpu.mem, stackAddr, 'word');
   cpu.regs.SP = (cpu.regs.SP + 2) & 0xFFFF;
   cpu.changedRegs.add('SP');
   return val;
@@ -257,6 +263,10 @@ function handleInt21(cpu: CpuState, prog: Program, line: number): StepResult | n
         if (cpu.output.length === 0) cpu.output.push('');
         cpu.output[cpu.output.length - 1] += char;
       }
+      // In DOS / Emu8086, INT 21h/AH=02h copies DL to AL
+      if (cpu.preset === 'emu8086') {
+        setReg(cpu.regs, cpu.changedRegs, 'AL', dl);
+      }
       break;
     }
     case 0x09: {
@@ -276,6 +286,10 @@ function handleInt21(cpu: CpuState, prog: Program, line: number): StepResult | n
       cpu.output[cpu.output.length - 1] += parts[0];
       for (let i = 1; i < parts.length; i++) {
         cpu.output.push(parts[i]);
+      }
+      // In DOS / Emu8086, INT 21h/AH=09h leaves AL = 24h ('$')
+      if (cpu.preset === 'emu8086') {
+        setReg(cpu.regs, cpu.changedRegs, 'AL', 0x24);
       }
       break;
     }

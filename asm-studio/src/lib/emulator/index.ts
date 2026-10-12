@@ -1,24 +1,25 @@
 // ─── Emulator Facade ──────────────────────────────────────────────────────────
 import { assemble } from './assembler';
 import { step } from './executor';
-import type { CpuState, Program, StepResult } from './types';
+import type { CpuState, EmulatorPreset, Program, StepResult } from './types';
 import { defaultFlags, defaultRegisters } from './types';
 
 export { assemble, SAMPLE_PROGRAM } from './assembler';
-export type { AsmError, CpuState, DataVar, Flags, Instruction, Program, Registers, StepResult } from './types';
+export type { AsmError, CpuState, DataVar, EmulatorPreset, Flags, Instruction, Program, Registers, StepResult } from './types';
 export { getReg, setReg } from './executor';
 
 export class Emulator {
   private prog: Program | null = null;
   public  cpu: CpuState;
+  public  preset: EmulatorPreset = 'flat';
 
   constructor() {
-    this.cpu = this.makeInitialCpu();
+    this.cpu = this.makeInitialCpu('flat');
   }
 
-  private makeInitialCpu(): CpuState {
+  private makeInitialCpu(preset: EmulatorPreset = this.preset): CpuState {
     return {
-      regs: defaultRegisters(),
+      regs: defaultRegisters(preset),
       flags: defaultFlags(),
       mem: new Uint8Array(65536),
       ipIdx: 0,
@@ -32,12 +33,14 @@ export class Emulator {
       stepCount: 0,
       breakpoints: new Set(),
       ioPorts: {},
+      preset,
     };
   }
 
   /** Load & assemble source code. Returns any assembly errors. */
-  load(source: string): Program {
-    this.prog = assemble(source);
+  load(source: string, preset: EmulatorPreset = this.preset): Program {
+    this.preset = preset;
+    this.prog = assemble(source, preset);
     this.reset(false);
     return this.prog;
   }
@@ -45,15 +48,15 @@ export class Emulator {
   /** Reset CPU state but keep the loaded program. */
   reset(keepProgram = true): void {
     const bp = new Set(this.cpu.breakpoints);
-    this.cpu = this.makeInitialCpu();
+    this.cpu = this.makeInitialCpu(this.preset);
     this.cpu.breakpoints = bp;
-    if (keepProgram && this.prog) {
-      // Pre-load initial data memory
+    const defaultIp = this.preset === 'emu8086' ? 0x0000 : 0x0100;
+    if (this.prog) {
       this.cpu.mem.set(this.prog.initialMem);
-      this.cpu.regs.IP = this.prog.instructions[0]?.address ?? 0x0100;
-    } else if (this.prog) {
-      this.cpu.mem.set(this.prog.initialMem);
-      this.cpu.regs.IP = this.prog.instructions[0]?.address ?? 0x0100;
+      this.cpu.regs.IP = this.prog.instructions[0]?.address ?? defaultIp;
+      if (this.preset === 'emu8086' && this.prog.stackSize !== undefined) {
+        this.cpu.regs.SP = this.prog.stackSize;
+      }
     }
   }
 

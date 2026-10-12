@@ -58,6 +58,9 @@ export interface DataVar {
   elemType: 'byte' | 'word';
 }
 
+/** Emulation preset mode */
+export type EmulatorPreset = 'flat' | 'emu8086';
+
 /** A fully assembled program ready for execution */
 export interface Program {
   instructions: Instruction[];
@@ -66,6 +69,8 @@ export interface Program {
   labels: Map<string, number>;     // UPPERCASE label → instruction index
   initialMem: Uint8Array;          // 64 KB memory pre-loaded with .data values
   errors: AsmError[];
+  preset?: EmulatorPreset;
+  stackSize?: number;
 }
 
 /** An error produced by the assembler */
@@ -91,6 +96,7 @@ export interface CpuState {
   stepCount: number;
   breakpoints: Set<number>; // instruction indices with breakpoints
   ioPorts: Record<number, number>; // I/O port address -> 8-bit or 16-bit value
+  preset?: EmulatorPreset;
 }
 
 /** Result of a single emulator step */
@@ -103,7 +109,10 @@ export type StepResult =
   | { type: 'input'; mode: 'char' | 'line'; line: number };
 
 /** Default initial CPU registers */
-export function defaultRegisters(): Registers {
+export function defaultRegisters(preset: EmulatorPreset = 'flat'): Registers {
+  if (preset === 'emu8086') {
+    return { AX:0, BX:0, CX:0, DX:0, SI:0, DI:0, SP:0x0100, BP:0, IP:0x0000, CS:0x0710, DS:0x0700, SS:0x0720, ES:0x0700 };
+  }
   return { AX:0, BX:0, CX:0, DX:0, SI:0, DI:0, SP:0xFFFE, BP:0, IP:0x0100, CS:0, DS:0, SS:0, ES:0 };
 }
 
@@ -111,4 +120,5 @@ export function defaultRegisters(): Registers {
 export function defaultFlags(): Flags {
   return { CF:false, ZF:false, SF:false, OF:false, PF:false, AF:false, DF:false, TF:false, IF:true };
 }
+
 

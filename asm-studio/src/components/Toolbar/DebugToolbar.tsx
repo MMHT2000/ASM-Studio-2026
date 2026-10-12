@@ -17,6 +17,8 @@ export default function DebugToolbar() {
   const historyCount     = useEmulatorStore(s => s.history.length);
   const animSpeedMs      = useEmulatorStore(s => s.animSpeedMs);
   const setAnimSpeed     = useEmulatorStore(s => s.setAnimSpeed);
+  const preset           = useEmulatorStore(s => s.preset);
+  const setPreset        = useEmulatorStore(s => s.setPreset);
 
   const openSettings     = useSettingsStore(s => s.openSettings);
   const toggleSettings   = useSettingsStore(s => s.toggleSettings);
@@ -95,17 +97,35 @@ export default function DebugToolbar() {
 
       {/* ── CENTER SECTION: Organized Execution Control Deck ── */}
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar py-1">
-        {/* Assemble Button */}
-        <button
-          onClick={assemble}
-          title="Assemble code & load into memory (F5)"
-          disabled={isRunning}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-editor-accent/15 hover:bg-editor-accent/25 text-editor-accent border border-editor-accent/35 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shadow-xs"
-        >
-          <span>⚙</span>
-          <span>Assemble</span>
-          <kbd className="text-[9px] font-mono opacity-60 bg-editor-panel/80 px-1 py-0.2 rounded border border-editor-accent/20">F5</kbd>
-        </button>
+        {/* Preset Selector & Assemble Cluster */}
+        <div className="inline-flex items-center rounded border border-editor-accent/35 bg-editor-accent/10 p-0.5 shadow-xs">
+          <div
+            className="flex items-center gap-1 px-2 py-0.5 text-[11px] text-editor-subtext hover:text-editor-text transition"
+            title="Select CPU & Memory Preset (Standard Flat vs Emu8086 Compatible)"
+          >
+            <Cpu className="w-3 h-3 text-editor-accent shrink-0" />
+            <select
+              value={preset}
+              disabled={isRunning}
+              onChange={(e) => setPreset(e.target.value as 'flat' | 'emu8086')}
+              className="bg-transparent text-editor-text text-[11px] font-medium focus:outline-none cursor-pointer pr-1 disabled:opacity-40"
+            >
+              <option value="flat" className="bg-editor-panel text-editor-text">Standard (Flat)</option>
+              <option value="emu8086" className="bg-editor-panel text-editor-text">Emu8086 Preset</option>
+            </select>
+          </div>
+
+          <button
+            onClick={assemble}
+            title="Assemble code & load into memory (F5)"
+            disabled={isRunning}
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-semibold bg-editor-accent/20 hover:bg-editor-accent/30 text-editor-accent border-l border-editor-accent/30 transition cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            <span>⚙</span>
+            <span>Assemble</span>
+            <kbd className="text-[9px] font-mono opacity-60 bg-editor-panel/80 px-1 py-0.2 rounded border border-editor-accent/20">F5</kbd>
+          </button>
+        </div>
 
         {/* Playback & Speed Cluster */}
         <div className="inline-flex items-center rounded border border-editor-border bg-editor-surface/30 p-0.5 shadow-xs">

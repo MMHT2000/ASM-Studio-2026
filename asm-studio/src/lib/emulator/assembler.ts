@@ -1,5 +1,5 @@
 // ─── 8086 Two-Pass Assembler ───────────────────────────────────────────────────
-import type { AsmError, DataVar, Instruction, Operand, OpSize, Program, RegName } from './types';
+import type { AsmError, DataVar, EmulatorPreset, Instruction, Operand, OpSize, Program, RegName } from './types';
 import { ALL_REGS, BYTE_REGS, WORD_REGS } from './types';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -118,7 +118,7 @@ function parseMemExpr(expr: string): { base?: RegName; index?: RegName; disp: nu
 }
 
 /** Parse a single operand string into an Operand object */
-function parseOperand(raw: string, knownLabels?: Set<string>): Operand {
+function parseOperand(raw: string, preset: EmulatorPreset = 'flat'): Operand {
   let text = raw.trim();
   if (!text) throw new Error(`Empty operand`);
 
@@ -144,7 +144,9 @@ function parseOperand(raw: string, knownLabels?: Set<string>): Operand {
   if (isRegister(upper)) return { kind: 'reg', name: upper as RegName };
 
   // @data / @code / @stack (segment pseudo-vars)
-  if (upper === '@DATA' || upper === '@CODE' || upper === '@STACK') return { kind: 'imm', value: 0 };
+  if (upper === '@DATA') return { kind: 'imm', value: preset === 'emu8086' ? 0x0710 : 0 };
+  if (upper === '@CODE') return { kind: 'imm', value: preset === 'emu8086' ? 0x0710 : 0 };
+  if (upper === '@STACK') return { kind: 'imm', value: preset === 'emu8086' ? 0x0720 : 0 };
 
   // Character literal 'X'
   if (/^'.'$/.test(text)) return { kind: 'imm', value: text.charCodeAt(1) };
@@ -238,7 +240,7 @@ function parseDataValues(raw: string, elemType: 'byte' | 'word', mem: Uint8Array
 
 // ── Main Assembler Entry Point ────────────────────────────────────────────────
 
-export function assemble(source: string): Program {
+export function assemble(source: string, preset: EmulatorPreset = 'flat'): Program {
   const lines = source.split('\n');
   const errors: AsmError[] = [];
   const vars   = new Map<string, DataVar>();
@@ -246,9 +248,11 @@ export function assemble(source: string): Program {
   const labels = new Map<string, number>();
   const instructions: Instruction[] = [];
   const mem = new Uint8Array(65536);
-  // Data segment starts at 0x0300 (leaves room for IVT and BIOS data)
-  const DATA_BASE = 0x0300;
+  // In 'flat' preset, data starts at 0x0300; in 'emu8086' preset, data offsets start at 0x0000 inside DS
+  const DATA_BASE = preset === 'emu8086' ? 0x0000 : 0x0300;
   let dataOffset = 0;
+  let stackSize = preset === 'emu8086' ? 0x0100 : 0xFFFE;
+  let codeOrigin = preset === 'emu8086' ? 0x0000 : 0x0100;
 
   type Section = 'preamble' | 'data' | 'code';
   let section: Section = 'preamble';
@@ -265,7 +269,20 @@ export function assemble(source: string): Program {
 
     // Section directives
     if (/^\.MODEL\b/i.test(upper)) continue;
-    if (/^\.STACK\b/i.test(upper)) continue;
+    const stackMatch = upper.match(/^\.STACK\s*(\S+)?/i);
+    if (stackMatch) {
+      if (stackMatch[1]) {
+        const parsed = parseNumber(stackMatch[1]);
+        if (parsed !== null && preset === 'emu8086') stackSize = parsed;
+      }
+      continue;
+    }
+    const orgMatch = upper.match(/^ORG\s+(\S+)/i);
+    if (orgMatch) {
+      const parsed = parseNumber(orgMatch[1]);
+      if (parsed !== null) codeOrigin = parsed;
+      continue;
+    }
     if (/^\.DATA\b/i.test(upper)) { section = 'data'; continue; }
     if (/^\.CODE\b/i.test(upper)) { section = 'code'; continue; }
     if (/^ASSUME\b/i.test(upper)) continue;
@@ -325,7 +342,7 @@ export function assemble(source: string): Program {
   // ─ Second Pass: parse instructions and resolve labels/vars ──────────────────
   for (let pi = 0; pi < pendingInstructions.length; pi++) {
     const { lineNum, text } = pendingInstructions[pi];
-    const address = 0x0100 + pi * 3; // pseudo code address for display
+    const address = codeOrigin + pi * 3; // pseudo code address for display
 
     try {
       const { mnemonic, rest } = splitMnemonicRest(text);
@@ -338,7 +355,7 @@ export function assemble(source: string): Program {
 
       for (const raw of rawOps) {
         try {
-          ops.push(parseOperand(raw));
+          ops.push(parseOperand(raw, preset));
         } catch (e) {
           errors.push({ line: lineNum, msg: String(e), type: 'error' });
           ops.push({ kind: 'imm', value: 0 });
@@ -387,7 +404,7 @@ export function assemble(source: string): Program {
   }
 
   // Set IP display to first instruction address
-  return { instructions, vars, consts, labels, initialMem: mem, errors };
+  return { instructions, vars, consts, labels, initialMem: mem, errors, preset, stackSize };
 }
 
 /** Default "Hello, World!" sample program */

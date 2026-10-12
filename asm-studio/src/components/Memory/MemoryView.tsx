@@ -17,16 +17,25 @@ function isPrintable(n: number) {
 export default function MemoryView() {
   const cpu           = useEmulatorStore(s => s.cpuSnapshot);
   const program       = useEmulatorStore(s => s.program);
+  const preset        = useEmulatorStore(s => s.preset);
   const setMemoryByte = useEmulatorStore(s => s.setMemoryByte);
 
-  const [jumpAddr, setJumpAddr]         = useState('0300');
-  const [viewStart, setViewStart]       = useState(0x0300);
-  const [selectedAddr, setSelectedAddr] = useState<number | null>(0x0300);
+  const defaultDataAddr = preset === 'emu8086' ? 0x0000 : 0x0300;
+  const [jumpAddr, setJumpAddr]         = useState(preset === 'emu8086' ? '0000' : '0300');
+  const [viewStart, setViewStart]       = useState(defaultDataAddr);
+  const [selectedAddr, setSelectedAddr] = useState<number | null>(defaultDataAddr);
   const [editingAddr, setEditingAddr]   = useState<number | null>(null);
   const [editValue, setEditValue]       = useState('');
   
   const editInputRef = useRef<HTMLInputElement>(null);
   const ROWS = 16;
+
+  useEffect(() => {
+    const start = preset === 'emu8086' ? 0x0000 : 0x0300;
+    setViewStart(start);
+    setSelectedAddr(start);
+    setJumpAddr(preset === 'emu8086' ? '0000' : '0300');
+  }, [preset]);
 
   // Auto-focus and select input when entering edit mode
   useEffect(() => {
@@ -171,9 +180,9 @@ export default function MemoryView() {
 
         {/* Quick jump presets */}
         <div className="flex items-center gap-1 ml-1">
-          <QuickButton label=".DATA" addr="0300" onClick={addr => handleJump(addr)} />
-          <QuickButton label=".CODE" addr="0100" onClick={addr => handleJump(addr)} />
-          <QuickButton label="STACK" addr={toHex4(sp & ~0xF)} onClick={addr => handleJump(addr)} />
+          <QuickButton label=".DATA" addr={preset === 'emu8086' ? '0000' : '0300'} onClick={addr => handleJump(addr)} />
+          <QuickButton label=".CODE" addr={preset === 'emu8086' ? '0000' : '0100'} onClick={addr => handleJump(addr)} />
+          <QuickButton label="STACK" addr={toHex4((preset === 'emu8086' ? 0xFF00 + (sp & 0xFF) : sp) & ~0xF)} onClick={addr => handleJump(addr)} />
           <QuickButton label="IVT"   addr="0000" onClick={addr => handleJump(addr)} />
         </div>
 

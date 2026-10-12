@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Emulator, SAMPLE_PROGRAM } from '../lib/emulator';
-import type { AsmError, CpuState, Program, StepResult } from '../lib/emulator';
+import type { AsmError, CpuState, EmulatorPreset, Program, StepResult } from '../lib/emulator';
 import { useSettingsStore } from './settingsStore';
 
 type EmulatorStatus = 'idle' | 'running' | 'animating' | 'paused' | 'halted' | 'error' | 'input';
@@ -16,6 +16,10 @@ interface EmulatorStore {
   // Source code in the editor
   source: string;
   setSource: (src: string) => void;
+
+  // Emulation preset ('flat' | 'emu8086')
+  preset: EmulatorPreset;
+  setPreset: (preset: EmulatorPreset) => void;
 
   // Assembled program
   program: Program | null;
@@ -101,6 +105,12 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
   source: SAMPLE_PROGRAM,
   setSource: (src) => set({ source: src }),
 
+  preset: 'flat',
+  setPreset: (preset: EmulatorPreset) => {
+    set({ preset });
+    get().assemble();
+  },
+
   program: null,
   asmErrors: [],
   cpuSnapshot: null,
@@ -122,8 +132,8 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
 
   assemble: () => {
     clearAnimTimer();
-    const { source } = get();
-    const prog = emu.load(source);
+    const { source, preset } = get();
+    const prog = emu.load(source, preset);
     const errors = prog.errors;
     const hasErrors = errors.some(e => e.type === 'error');
 
@@ -137,7 +147,7 @@ export const useEmulatorStore = create<EmulatorStore>((set, get) => ({
       status: hasErrors ? 'error' : 'paused',
       statusMessage: hasErrors
         ? `${errors.filter(e => e.type === 'error').length} error(s) — fix them and reassemble`
-        : `Assembled OK. ${prog.instructions.length} instructions.`,
+        : `Assembled OK (${preset === 'emu8086' ? 'Emu8086 Preset' : 'Standard Flat'}). ${prog.instructions.length} instructions.`,
       currentLine: emu.currentLine,
     });
   },
