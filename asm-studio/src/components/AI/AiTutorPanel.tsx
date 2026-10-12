@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { 
   Sparkles, Send, Key, Trash2, Loader2, 
-  HelpCircle, Zap, AlertTriangle, Flag, Check, Copy, Settings, ExternalLink
+  HelpCircle, Zap, AlertTriangle, Flag, Check, Copy, Settings, Maximize2, Minimize2
 } from 'lucide-react';
 import { useEmulatorStore } from '../../store/emulatorStore';
 import { useSettingsStore } from '../../store/settingsStore';
@@ -26,6 +26,7 @@ export default function AiTutorPanel() {
   const [input, setInput]             = useState('');
   const [loading, setLoading]         = useState(false);
   const [copiedId, setCopiedId]       = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +61,18 @@ export default function AiTutorPanel() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, loading]);
+
+  // Exit fullscreen on Escape
+  useEffect(() => {
+    if (!isFullscreen) return;
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [isFullscreen]);
 
   const handleSend = async (customPrompt?: string) => {
     const textToSend = customPrompt || input.trim();
@@ -111,12 +124,23 @@ export default function AiTutorPanel() {
   };
 
   return (
-    <div className="h-full flex flex-col bg-editor-panel text-editor-text select-text text-xs">
+    <div
+      className={
+        isFullscreen
+          ? 'fixed inset-0 z-50 flex flex-col bg-editor-panel text-editor-text select-text text-sm shadow-2xl'
+          : 'h-full flex flex-col bg-editor-panel text-editor-text select-text text-xs'
+      }
+    >
       {/* Header */}
       <div className="px-3 py-1.5 border-b border-editor-border flex items-center justify-between bg-editor-bg/30">
         <div className="flex items-center gap-1.5 font-semibold text-editor-accent">
           <Sparkles className="w-4 h-4 text-editor-accent" />
           <span>{providerName} 8086 Tutor</span>
+          {isFullscreen && (
+            <span className="text-[10px] font-normal text-editor-subtext ml-1 px-1.5 py-0.5 rounded bg-editor-surface/50">
+              Fullscreen (Press Esc to exit)
+            </span>
+          )}
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -151,6 +175,22 @@ export default function AiTutorPanel() {
           >
             <Trash2 className="w-3.5 h-3.5" />
           </button>
+
+          {/* Fullscreen toggle */}
+          <button
+            onClick={() => setIsFullscreen(f => !f)}
+            className="flex items-center gap-1 text-editor-subtext hover:text-editor-accent px-1.5 py-1 hover:bg-editor-surface rounded cursor-pointer border border-transparent hover:border-editor-border transition"
+            title={isFullscreen ? 'Exit Fullscreen (Esc)' : 'Expand Code Explainer to Fullscreen'}
+          >
+            {isFullscreen ? (
+              <>
+                <Minimize2 className="w-3.5 h-3.5" />
+                <span className="text-[11px] font-medium">Exit Fullscreen</span>
+              </>
+            ) : (
+              <Maximize2 className="w-3.5 h-3.5" />
+            )}
+          </button>
         </div>
       </div>
 
@@ -179,7 +219,7 @@ export default function AiTutorPanel() {
       </div>
 
       {/* Messages Thread */}
-      <div className="flex-1 overflow-y-auto p-3 space-y-3 font-sans">
+      <div className={`flex-1 overflow-y-auto p-3 space-y-3 font-sans ${isFullscreen ? 'max-w-5xl w-full mx-auto px-6 py-5 space-y-4' : ''}`}>
         {messages.map((m) => {
           const isUser = m.sender === 'user';
           return (
@@ -191,7 +231,7 @@ export default function AiTutorPanel() {
               </div>
               
               <div 
-                className={`max-w-[90%] rounded-lg px-3 py-2 leading-relaxed text-xs relative group ${
+                className={`max-w-[90%] rounded-lg px-3 py-2 leading-relaxed ${isFullscreen ? 'text-sm px-4 py-3' : 'text-xs'} relative group ${
                   isUser
                     ? 'bg-editor-accent text-editor-bg font-medium'
                     : 'bg-editor-bg border border-editor-border text-editor-text'
@@ -226,7 +266,7 @@ export default function AiTutorPanel() {
       </div>
 
       {/* Input Bar */}
-      <div className="p-2 border-t border-editor-border bg-editor-panel flex gap-1.5 items-end">
+      <div className={`p-2 border-t border-editor-border bg-editor-panel flex gap-1.5 items-end ${isFullscreen ? 'max-w-5xl w-full mx-auto px-6 py-3' : ''}`}>
         <textarea
           value={input}
           onChange={e => setInput(e.target.value)}
@@ -238,7 +278,7 @@ export default function AiTutorPanel() {
           }}
           placeholder={`Ask ${providerName} a question about your 8086 code… (Enter to send)`}
           rows={1}
-          className="flex-1 bg-editor-bg text-editor-text text-xs px-2.5 py-1.5 rounded border border-editor-border outline-none focus:border-editor-accent resize-none max-h-24 min-h-[32px]"
+          className={`flex-1 bg-editor-bg text-editor-text ${isFullscreen ? 'text-sm py-2' : 'text-xs py-1.5'} px-2.5 rounded border border-editor-border outline-none focus:border-editor-accent resize-none max-h-24 min-h-[32px]`}
         />
 
         <button
